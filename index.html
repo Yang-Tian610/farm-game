@@ -2915,7 +2915,7 @@ async function syncFriendPositions(){
     if(resp.ok){
       let data = await resp.json();
       if(data.players){
-        data.players.forEach(p=>{
+        for(let p of data.players){
           if(p.name !== state.chatName && p.online){
             // Load their position
             let posResp = await fetch(API_BASE + '/api/farm/load?name=' + encodeURIComponent(p.name), {
@@ -2928,7 +2928,7 @@ async function syncFriendPositions(){
               }
             }
           }
-        });
+        }
       }
     }
   }catch(e){}
