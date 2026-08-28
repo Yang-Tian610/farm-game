@@ -1,0 +1,2591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开心农场</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --green:#2d6a1e;--green-l:#4a9c35;--green-d:#1a4012;
+  --brown:#8b6914;--brown-l:#c4a24c;--brown-d:#5c460e;
+  --soil:#5c3d11;--soil-w:#8b6b3d;
+  --gold:#f5a623;--gold-d:#c47d0e;
+  --sky:#87ceeb;--sky-l:#c5e8f7;
+  --red:#d94040;--blue:#3b82f6;
+  --card:#fff;--card-b:#e8e0d0;
+  --txt:#2c2c2c;--txt-l:#6b6b6b;--txt-m:#999;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:linear-gradient(180deg,var(--sky-l) 0%,#e8f5e9 50%,#c8e6c9 100%);
+  min-height:100vh;color:var(--txt);overflow-x:hidden;
+}
+
+/* ── Header ── */
+header{
+  background:linear-gradient(135deg,var(--green-d),var(--green),var(--green-l));
+  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+  color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.2);position:relative;z-index:10;
+}
+.logo{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px;text-shadow:0 2px 4px rgba(0,0,0,.3)}
+.stats{display:flex;gap:10px}
+.stat{
+  background:rgba(255,255,255,.18);backdrop-filter:blur(8px);
+  padding:5px 12px;border-radius:20px;font-size:13px;font-weight:600;
+  display:flex;align-items:center;gap:5px;
+}
+
+/* ── Weather ── */
+.weather-bar{
+  background:rgba(255,255,255,.88);backdrop-filter:blur(10px);
+  padding:8px 20px;display:flex;align-items:center;justify-content:center;gap:10px;
+  border-bottom:1px solid var(--card-b);font-size:14px;
+}
+.weather-bar .wi{font-size:22px}
+.weather-bar .wn{font-weight:600}
+.weather-bar .we{color:var(--green-l);font-size:12px;font-weight:600}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:2px;padding:10px 20px 0;justify-content:center}
+.tab{
+  padding:8px 20px;background:rgba(255,255,255,.45);border-radius:10px 10px 0 0;
+  cursor:pointer;font-size:13px;font-weight:600;color:var(--txt-l);
+  transition:all .2s;border:1px solid transparent;border-bottom:none;user-select:none;
+}
+.tab:hover{background:rgba(255,255,255,.65)}
+.tab.active{background:var(--card);color:var(--green);border-color:var(--card-b)}
+
+/* ── Main ── */
+main{
+  max-width:660px;margin:0 auto;padding:0 12px 80px;
+  background:var(--card);border-radius:0 0 16px 16px;
+  box-shadow:0 4px 24px rgba(0,0,0,.08);border:1px solid var(--card-b);border-top:none;
+  min-height:460px;position:relative;
+}
+
+/* ── Farm Grid ── */
+.farm-wrap{padding:20px}
+.farm-lab{
+  text-align:center;font-size:13px;color:var(--txt-l);margin-bottom:10px;font-weight:500;
+}
+.farm-lab b{color:var(--txt)}
+.farm-grid{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:5px;
+  max-width:500px;margin:0 auto;
+}
+.plot{
+  aspect-ratio:1;background:var(--soil);border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;position:relative;border:2px solid transparent;
+  user-select:none;
+}
+.plot:hover{transform:scale(1.06);z-index:2}
+.plot.empty{background:linear-gradient(145deg,var(--soil),var(--soil-w));box-shadow:inset 0 2px 6px rgba(0,0,0,.3)}
+.plot.growing{background:linear-gradient(145deg,#6b4423,#8b6b3d);box-shadow:inset 0 2px 4px rgba(0,0,0,.2)}
+.plot.ready{
+  background:linear-gradient(145deg,#5a7d2e,#7da844);
+  box-shadow:0 0 10px rgba(124,197,48,.4);border-color:var(--green-l);
+  animation:pulse 2s ease-in-out infinite;
+}
+.plot.locked{background:#bbb;cursor:not-allowed;opacity:.5}
+.plot.locked:hover{transform:none}
+.plot.watering{animation:waterPulse .6s ease}
+@keyframes pulse{0%,100%{box-shadow:0 0 10px rgba(124,197,48,.4)}50%{box-shadow:0 0 18px rgba(124,197,48,.7)}}
+@keyframes waterPulse{0%{box-shadow:0 0 0 rgba(59,130,246,0)}50%{box-shadow:0 0 16px rgba(59,130,246,.5)}100%{box-shadow:0 0 0 rgba(59,130,246,0)}}
+@keyframes hungryPulse{0%,100%{box-shadow:0 0 0 rgba(255,152,0,0)}50%{box-shadow:0 0 12px rgba(255,152,0,.6)}}
+.pe{font-size:28px;line-height:1;transition:transform .3s}
+.plot.ready .pe{animation:bounce 1s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.pb{
+  position:absolute;bottom:3px;left:18%;right:18%;height:3px;
+  background:rgba(0,0,0,.3);border-radius:2px;overflow:hidden;
+}
+.pf{height:100%;background:var(--green-l);border-radius:2px;transition:width .5s}
+.pl{position:absolute;bottom:-15px;font-size:9px;color:var(--txt-m);white-space:nowrap}
+.plot.ready .pl{color:var(--green);font-weight:700}
+.lock-i{font-size:18px;opacity:.4}
+
+/* ── Friend Farm ── */
+.friend-farm{padding:20px;display:none}
+.friend-farm.active{display:block}
+.ff-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.ff-info{display:flex;align-items:center;gap:10px}
+.ff-av{width:38px;height:38px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff}
+.ff-nm{font-weight:600;font-size:15px}
+.ff-st{font-size:11px;color:var(--txt-l)}
+.ff-acts{display:flex;gap:6px}
+.ff-btn{
+  padding:5px 12px;border-radius:8px;border:1px solid var(--card-b);
+  background:var(--card);cursor:pointer;font-size:12px;font-weight:600;
+  transition:all .15s;display:flex;align-items:center;gap:4px;
+}
+.ff-btn:hover{background:#f5f5f5}
+.ff-btn.steal{background:#fff3e0;border-color:#ffb74d;color:#e65100}
+.ff-btn.steal:hover{background:#ffe0b2}
+.friend-list{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.fr-ch{
+  padding:5px 12px;border-radius:16px;background:#f0f0f0;cursor:pointer;
+  font-size:12px;transition:all .15s;border:2px solid transparent;
+}
+.fr-ch:hover{background:#e0e0e0}
+.fr-ch.active{background:var(--green-l);color:#fff;border-color:var(--green)}
+
+/* ── Market ── */
+.market{padding:20px;display:none}
+.market.active{display:block}
+.market h3{font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.mk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px}
+.mk-item{
+  background:#fafafa;border:1px solid var(--card-b);border-radius:12px;
+  padding:14px;text-align:center;transition:all .2s;
+}
+.mk-item:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.mk-em{font-size:36px;margin-bottom:6px}
+.mk-nm{font-weight:600;font-size:14px;margin-bottom:6px}
+.mk-row{display:flex;justify-content:space-around;font-size:11px;color:var(--txt-l);margin-bottom:10px}
+.mk-row span{display:flex;flex-direction:column;align-items:center;gap:1px}
+.mk-row b{color:var(--txt);font-size:13px}
+.mk-buy{
+  width:100%;padding:6px;border:none;border-radius:8px;
+  background:var(--green-l);color:#fff;font-weight:600;font-size:12px;
+  cursor:pointer;transition:all .15s;
+}
+.mk-buy:hover{background:var(--green)}
+.mk-buy:disabled{background:#ccc;cursor:not-allowed}
+
+/* ── Recycle ── */
+.recycle{padding:20px;display:none}
+.recycle.active{display:block}
+.recycle h3{font-size:16px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.recycle .desc{font-size:13px;color:var(--txt-l);margin-bottom:14px;line-height:1.6}
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.inv-item{
+  background:#fafafa;border:1px solid var(--card-b);border-radius:10px;
+  padding:12px;text-align:center;
+}
+.inv-em{font-size:28px}
+.inv-nm{font-size:12px;color:var(--txt-l);margin:3px 0}
+.inv-ct{font-weight:700;font-size:15px;margin-bottom:6px}
+.inv-sell{
+  width:100%;padding:4px 8px;border:1px solid var(--green-l);border-radius:6px;
+  background:transparent;color:var(--green);font-size:11px;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
+.inv-sell:hover{background:var(--green);color:#fff}
+.inv-sell:disabled{border-color:#ccc;color:#ccc;cursor:not-allowed}
+.empty-inv{text-align:center;padding:28px;color:var(--txt-m);font-size:13px}
+
+/* ── Toolbar ── */
+.toolbar{
+  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  background:var(--card);border-radius:16px;padding:8px 14px;
+  display:flex;gap:6px;align-items:center;
+  box-shadow:0 4px 24px rgba(0,0,0,.15);border:1px solid var(--card-b);z-index:100;
+}
+.tool{
+  width:42px;height:42px;border-radius:10px;border:2px solid transparent;
+  background:#f5f5f5;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:20px;transition:all .15s;position:relative;
+}
+.tool:hover{background:#eaeaea;transform:scale(1.08)}
+.tool.active{border-color:var(--green-l);background:#e8f5e9}
+.tool .tip{
+  position:absolute;bottom:115%;left:50%;transform:translateX(-50%);
+  background:var(--txt);color:#fff;padding:2px 7px;border-radius:4px;
+  font-size:10px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.tool:hover .tip{opacity:1}
+.tdiv{width:1px;height:26px;background:var(--card-b);margin:0 2px}
+.tool-info{font-size:12px;color:var(--txt-l);padding:0 6px;max-width:160px;line-height:1.3}
+
+/* ── Seed Picker ── */
+.seed-pk{
+  position:fixed;bottom:78px;left:50%;transform:translateX(-50%);
+  background:var(--card);border-radius:14px;padding:14px;
+  box-shadow:0 8px 32px rgba(0,0,0,.2);border:1px solid var(--card-b);
+  z-index:99;display:none;min-width:300px;
+}
+.seed-pk.show{display:block;animation:slideUp .2s ease}
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.seed-pk h4{font-size:13px;color:var(--txt-l);margin-bottom:8px}
+.seed-opt{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;
+  cursor:pointer;transition:all .15s;
+}
+.seed-opt:hover{background:#f5f5f5}
+.seed-opt.active{background:#e8f5e9}
+.seed-opt .se{font-size:22px}
+.seed-opt .si{flex:1}
+.seed-opt .sn{font-weight:600;font-size:13px}
+.seed-opt .sd{font-size:11px;color:var(--txt-l)}
+.seed-opt .sc{font-size:12px;color:var(--gold-d);font-weight:600}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;top:18%;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.78);color:#fff;padding:9px 20px;border-radius:10px;
+  font-size:14px;z-index:1000;opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.toast.show{opacity:1}
+
+/* ── Float Text ── */
+.float-text{
+  position:absolute;font-weight:700;font-size:14px;pointer-events:none;z-index:50;
+  animation:floatUp 1s ease-out forwards;
+}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-36px)}}
+
+/* ── Particles ── */
+.particle{
+  position:absolute;width:5px;height:5px;border-radius:50%;pointer-events:none;z-index:50;
+  animation:particleFly .8s ease-out forwards;
+}
+@keyframes particleFly{
+  0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0)}
+}
+
+/* ── Welcome ── */
+.welcome{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;
+  display:flex;align-items:center;justify-content:center;
+}
+.welcome.hide{display:none}
+.wbox{
+  background:var(--card);border-radius:20px;padding:28px 32px;max-width:380px;width:90%;
+  text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:popIn .3s ease;
+}
+@keyframes popIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.wbox h2{font-size:22px;margin-bottom:6px}
+.wbox p{font-size:13px;color:var(--txt-l);margin-bottom:14px;line-height:1.6}
+.wbox .wt{text-align:left;font-size:12px;color:var(--txt-l);margin-bottom:14px;line-height:2}
+.wbox button{
+  padding:9px 28px;background:var(--green-l);color:#fff;border:none;border-radius:10px;
+  font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;
+}
+.wbox button:hover{background:var(--green)}
+
+/* ── Zones ── */
+.zone-wrap{padding:16px 20px;display:none;border-bottom:1px solid #eee}
+.zone-wrap.active{display:block}
+.zone-wrap.locked-zone{opacity:.55;pointer-events:none}
+.zone-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.zone-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+.zone-badge{font-size:11px;background:#e8f5e9;color:var(--green);padding:2px 8px;border-radius:10px;font-weight:600}
+.zone-badge.locked{background:#f5f5f5;color:#999}
+.zone-desc{font-size:12px;color:var(--txt-l);margin-bottom:10px}
+.zone-grid{display:grid;gap:6px;max-width:420px;margin:0 auto}
+.zone-grid.cols-1{grid-template-columns:1fr;max-width:200px}
+.zone-grid.cols-2{grid-template-columns:repeat(2,1fr);max-width:260px}
+.zone-grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.zone-grid.cols-4{grid-template-columns:repeat(4,1fr)}
+.zone-slot{
+  aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;position:relative;border:2px solid transparent;user-select:none;
+}
+.zone-slot:hover{transform:scale(1.05);z-index:2}
+.zone-slot.empty{box-shadow:inset 0 2px 6px rgba(0,0,0,.12)}
+.zone-slot.occupied{box-shadow:inset 0 2px 4px rgba(0,0,0,.08)}
+.zone-slot.product-ready{box-shadow:0 0 10px rgba(139,195,74,.5);border-color:#aed581;animation:pulse 2s ease-in-out infinite}
+.zone-slot.locked{background:#ddd;cursor:not-allowed;opacity:.5}
+.zone-slot.locked:hover{transform:none}
+.zone-slot.hungry{animation:hungryPulse 1.5s ease-in-out infinite}
+.zone-slot.pet-slot{background:linear-gradient(145deg,#fff3e0,#ffe0b2)}
+.zone-slot.pet-slot.empty{background:linear-gradient(145deg,#f5f5f5,#e8e8e8)}
+.zone-slot.pet-slot.occupied{background:linear-gradient(145deg,#ffe0b2,#ffcc80)}
+.zone-slot.flock-slot{background:linear-gradient(145deg,#e8f5e9,#c8e6c9)}
+.zone-slot.flock-slot.empty{background:linear-gradient(145deg,#f1f8e9,#dcedc8)}
+.zone-slot.pond-slot{background:linear-gradient(145deg,#e3f2fd,#bbdefb);border-radius:50%}
+.zone-slot.pond-slot.empty{background:linear-gradient(145deg,#f3f8ff,#e1f0ff)}
+.zone-slot.barn-slot{background:linear-gradient(145deg,#efebe9,#d7ccc8)}
+.zone-slot.barn-slot.empty{background:linear-gradient(145deg,#f5f0ed,#ebe4df)}
+.zone-slot.exotic-slot{background:linear-gradient(145deg,#f3e5f5,#e1bee7)}
+.zone-slot.exotic-slot.empty{background:linear-gradient(145deg,#faf5fc,#f0e8f5)}
+.zt-emoji{font-size:30px;line-height:1;transition:transform .3s}
+.zone-slot.pet-slot .zt-emoji{font-size:48px}
+.zone-slot.product-ready .zt-emoji{animation:bounce 1s ease-in-out infinite}
+.zt-info{position:absolute;bottom:3px;font-size:9px;color:rgba(0,0,0,.5);text-align:center;width:100%}
+.zone-slot.product-ready .zt-info{color:#fff;font-weight:700}
+.zt-hunger{position:absolute;top:3px;right:3px;font-size:10px;background:rgba(0,0,0,.25);padding:1px 5px;border-radius:8px;color:#fff}
+.zt-product{position:absolute;top:3px;left:3px;font-size:14px;animation:bounce 1s ease-in-out infinite}
+.zone-toolbar{display:flex;gap:6px;justify-content:center;margin-bottom:10px}
+.ztool{
+  padding:5px 12px;border-radius:10px;border:2px solid transparent;
+  background:#f5f5f5;cursor:pointer;font-size:12px;font-weight:600;
+  transition:all .15s;display:flex;align-items:center;gap:4px;
+}
+.ztool:hover{background:#eaeaea}
+.ztool.active{border-color:var(--green-l);background:#e8f5e9}
+.pet-happiness{position:absolute;bottom:3px;font-size:10px;color:var(--gold-d);font-weight:600}
+
+/* ── Animal Picker ── */
+.animal-pk{
+  position:fixed;bottom:78px;left:50%;transform:translateX(-50%);
+  background:var(--card);border-radius:14px;padding:14px;
+  box-shadow:0 8px 32px rgba(0,0,0,.2);border:1px solid var(--card-b);
+  z-index:99;display:none;min-width:320px;max-height:50vh;overflow-y:auto;
+}
+.animal-pk.show{display:block;animation:slideUp .2s ease}
+.animal-pk h4{font-size:13px;color:var(--txt-l);margin-bottom:8px}
+.animal-opt{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;
+  cursor:pointer;transition:all .15s;
+}
+.animal-opt:hover{background:#f5f5f5}
+.animal-opt.active{background:#e8f5e9}
+.animal-opt .ae{font-size:24px}
+.animal-opt .ai{flex:1}
+.animal-opt .an{font-weight:600;font-size:13px}
+.animal-opt .ad{font-size:11px;color:var(--txt-l)}
+.animal-opt .ac{font-size:12px;color:var(--gold-d);font-weight:600}
+
+/* ── Pet Selection Dialog ── */
+.pet-sel{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;
+  display:flex;align-items:center;justify-content:center;
+}
+.pet-sel.hide{display:none}
+.ps-box{
+  background:var(--card);border-radius:20px;padding:28px 32px;max-width:400px;width:90%;
+  text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:popIn .3s ease;
+}
+.ps-box h2{font-size:20px;margin-bottom:6px}
+.ps-box p{font-size:13px;color:var(--txt-l);margin-bottom:16px}
+.ps-opts{display:flex;gap:16px;justify-content:center}
+.ps-opt{
+  flex:1;padding:20px 16px;border-radius:16px;border:2px solid #e0e0e0;
+  cursor:pointer;transition:all .2s;text-align:center;
+}
+.ps-opt:hover{border-color:var(--green-l);background:#f9fbe7}
+.ps-opt .ps-em{font-size:48px;display:block;margin-bottom:8px}
+.ps-opt .ps-nm{font-weight:700;font-size:15px}
+.ps-opt .ps-desc{font-size:11px;color:var(--txt-l);margin-top:4px}
+
+/* ── House Interior ── */
+.house-wrap{padding:0 20px 20px;display:none}
+.house-wrap.active{display:block}
+.room-nav{display:flex;gap:4px;margin-bottom:12px;background:#f5f0e8;border-radius:12px;padding:4px}
+.room-tab{
+  flex:1;padding:8px 4px;text-align:center;border-radius:10px;cursor:pointer;
+  font-size:13px;font-weight:600;color:var(--txt-l);transition:all .2s;user-select:none;
+}
+.room-tab:hover{background:rgba(255,255,255,.5)}
+.room-tab.active{background:var(--card);color:var(--green);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.energy-bar{
+  display:flex;align-items:center;gap:8px;padding:8px 14px;background:#fff8e1;
+  border-radius:10px;margin-bottom:14px;font-size:13px;font-weight:600;
+}
+.eb-track{flex:1;height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.eb-fill{height:100%;background:linear-gradient(90deg,#ff9800,#ffc107);border-radius:4px;transition:width .5s}
+.room{display:none;padding:16px;background:linear-gradient(180deg,#fefcf8,#faf6ee);border-radius:14px;border:1px solid #ede6d8}
+.room.active{display:block;animation:popIn .25s ease}
+.room-hd{font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:baseline;gap:8px}
+.room-sub{font-size:12px;color:var(--txt-l);font-weight:400}
+.chat-box{background:var(--card);border-radius:12px;border:1px solid #e8e0d0;overflow:hidden}
+.chat-msgs{height:260px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.chat-msg{max-width:80%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word}
+.chat-msg.self{align-self:flex-end;background:var(--green-l);color:#fff;border-bottom-right-radius:4px}
+.chat-msg.other{align-self:flex-start;background:#f0ebe0;color:var(--txt);border-bottom-left-radius:4px}
+.chat-msg.sys{align-self:center;background:transparent;color:var(--txt-m);font-size:11px;text-align:center}
+.chat-msg .cm-name{font-size:10px;font-weight:700;opacity:.7;margin-bottom:2px}
+.chat-msg .cm-time{font-size:9px;opacity:.5;margin-top:2px}
+.chat-bar{display:flex;gap:6px;padding:8px;background:#faf6ee;border-top:1px solid #e8e0d0}
+.chat-in{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:20px;font-size:13px;outline:none;transition:border-color .2s}
+.chat-in:focus{border-color:var(--green-l)}
+.chat-send{padding:8px 16px;background:var(--green-l);color:#fff;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.chat-send:hover{background:var(--green)}
+.chat-hint{text-align:center;font-size:11px;color:var(--txt-m);margin-top:8px}
+.cook-area{text-align:center;margin-bottom:16px}
+.cook-pots{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.cook-pot{
+  width:64px;height:64px;border-radius:14px;background:#f5f0e8;border:2px dashed #d4c9b8;
+  display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;
+  transition:all .2s;position:relative;
+}
+.cook-pot:hover{border-color:var(--green-l);background:#f9fbe7}
+.cook-pot.filled{border-style:solid;border-color:var(--green-l);background:#e8f5e9}
+.cook-pot.cook-result{border-color:var(--gold);background:#fff8e1}
+.cook-q{font-size:20px;color:#ccc}
+.cook-plus,.cook-eq{font-size:20px;font-weight:700;color:var(--txt-l)}
+.cook-btn{
+  padding:8px 20px;background:var(--gold);color:#fff;border:none;border-radius:10px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;margin:0 4px;
+}
+.cook-btn:hover{background:var(--gold-d)}
+.cook-btn:disabled{background:#ccc;cursor:not-allowed}
+.cook-clear{background:#e0e0e0;color:var(--txt)}
+.cook-clear:hover{background:#d0d0d0}
+.cook-inv{margin-top:14px}
+.cook-inv-t{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--txt-l)}
+.cook-inv-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
+.cook-item{
+  padding:8px;text-align:center;background:#fafafa;border:1px solid var(--card-b);
+  border-radius:10px;cursor:pointer;transition:all .15s;
+}
+.cook-item:hover{background:#f0ebe7;transform:scale(1.04)}
+.cook-item.selected{border-color:var(--green-l);background:#e8f5e9}
+.cook-item .ci-em{font-size:24px}
+.cook-item .ci-nm{font-size:11px;color:var(--txt-l);margin-top:2px}
+.cook-item .ci-ct{font-size:12px;font-weight:700}
+.tv-set{margin:0 auto 14px;max-width:360px}
+.tv-screen{
+  background:#1a1a2e;border-radius:16px;padding:24px;min-height:180px;
+  color:#e0e0e0;position:relative;overflow:hidden;border:4px solid #333;
+  box-shadow:0 0 20px rgba(0,0,0,.3);
+}
+.tv-screen::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.02) 2px,rgba(255,255,255,.02) 4px);
+  pointer-events:none;
+}
+.tv-ch{font-size:11px;color:#888;margin-bottom:8px;text-align:right}
+.tv-ct{font-size:14px;line-height:1.8}
+.tv-ct .tv-big{font-size:36px;display:block;text-align:center;margin:8px 0}
+.tv-ctrl{display:flex;gap:8px;justify-content:center}
+.tv-btn{
+  padding:6px 16px;background:#f5f0e8;border:1px solid #d4c9b8;border-radius:8px;
+  font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;
+}
+.tv-btn:hover{background:#ede6d8}
+.bed-area{text-align:center;padding:20px 0}
+.bed-vis{font-size:72px;margin-bottom:12px;transition:transform .3s}
+.bed-vis:hover{transform:scale(1.1)}
+.bed-info{font-size:14px;line-height:2;margin-bottom:16px;color:var(--txt-l)}
+.bed-info b{color:var(--txt);font-size:16px}
+.sleep-btn{
+  padding:12px 32px;background:linear-gradient(135deg,#5c6bc0,#3949ab);color:#fff;
+  border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;
+  transition:all .2s;box-shadow:0 4px 16px rgba(57,73,171,.3);
+}
+.sleep-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(57,73,171,.4)}
+.sleep-btn:active{transform:translateY(0)}
+.sleep-msg{margin-top:12px;font-size:13px;color:var(--green);font-weight:600;min-height:20px}
+
+/* ── Responsive ── */
+/* ── Login Screen ── */
+.login-screen{
+  position:fixed;inset:0;z-index:1000;
+  background:linear-gradient(135deg,#2d6a1e 0%,#4a9c35 50%,#87ceeb 100%);
+  display:flex;align-items:center;justify-content:center;
+  animation:fadeIn .4s ease;
+}
+.login-screen.hide{display:none}
+.login-card{
+  background:#fff;border-radius:20px;padding:36px 32px;max-width:380px;width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center;
+}
+.login-card h2{font-size:24px;margin-bottom:6px;color:var(--green-d)}
+.login-card .lc-sub{font-size:13px;color:var(--txt-l);margin-bottom:20px}
+.login-card label{display:block;text-align:left;font-size:13px;font-weight:600;color:var(--txt);margin-bottom:6px}
+.login-card input[type="text"]{
+  width:100%;padding:10px 14px;border:2px solid #e0d8c8;border-radius:10px;
+  font-size:15px;outline:none;transition:border .2s;margin-bottom:16px;
+}
+.login-card input[type="text"]:focus{border-color:var(--green-l)}
+.avatar-grid{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:20px;
+}
+.avatar-opt{
+  font-size:28px;padding:6px;border-radius:10px;cursor:pointer;
+  border:2px solid transparent;transition:all .15s;background:#f8f4ec;
+}
+.avatar-opt:hover{background:#efe8d8}
+.avatar-opt.selected{border-color:var(--green);background:#e8f5e9}
+.login-btn{
+  width:100%;padding:12px;background:linear-gradient(135deg,var(--green),var(--green-l));
+  color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;
+  cursor:pointer;transition:transform .15s;
+}
+.login-btn:hover{transform:scale(1.02)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+@media(max-width:520px){
+  .farm-grid{gap:3px}
+  .pe{font-size:22px}
+  .stats{gap:5px}
+  .stat{padding:3px 8px;font-size:11px}
+  .toolbar{padding:6px 8px;gap:4px}
+  .tool{width:36px;height:36px;font-size:17px}
+  .seed-pk{min-width:260px}
+  .mk-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .zone-grid{gap:4px}
+  .zt-emoji{font-size:22px}
+  .zone-slot.pet-slot .zt-emoji{font-size:36px}
+  .ztool{padding:4px 8px;font-size:11px}
+  .animal-pk{min-width:270px}
+  .zone-grid.cols-3{grid-template-columns:repeat(2,1fr)}
+  .zone-grid.cols-4{grid-template-columns:repeat(3,1fr)}
+  .room-nav{flex-wrap:wrap;gap:4px}
+  .room-tab{padding:6px 10px;font-size:12px}
+  .chat-msgs{height:260px}
+  .cook-pots{gap:6px}
+  .cook-pot{width:52px;height:52px}
+  .tv-screen{height:140px}
+  .cook-inv-g{grid-template-columns:repeat(3,1fr)}
+  .login-card{padding:24px 20px}
+  .avatar-grid{grid-template-columns:repeat(6,1fr);gap:4px}
+  .avatar-opt{font-size:24px;padding:4px}
+}
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <h2>🌾 开心农场</h2>
+    <div class="lc-sub">输入昵称，选择头像，开始游戏</div>
+    <label for="loginName">你的昵称</label>
+    <input type="text" id="loginName" placeholder="请输入昵称..." maxlength="8">
+    <label>选择头像</label>
+    <div class="avatar-grid" id="avatarGrid"></div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>进入游戏</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo"><span>🌾</span> 开心农场</div>
+  <div class="stats">
+    <div class="stat" id="coinStat">💰 <span id="coinVal">100</span></div>
+    <div class="stat" id="lvStat">⭐ Lv.<span id="lvVal">1</span></div>
+    <div class="stat" id="energyStat">⚡ <span id="energyVal">100</span></div>
+    <div class="stat" id="playerStat" style="cursor:pointer" onclick="switchAccount()" title="点击切换账号"><span id="playerAvatar">🧑</span> <span id="playerName">玩家</span></div>
+  </div>
+</header>
+
+<div class="weather-bar">
+  <span class="wi" id="wIcon">☀️</span>
+  <span>今日天气：</span>
+  <span class="wn" id="wName">晴天</span>
+  <span class="we" id="wEffect">生长速度正常</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-view="myfarm">🏡 我的农场</div>
+  <div class="tab" data-view="pasture">🐄 牧场</div>
+  <div class="tab" data-view="house">🏠 回家</div>
+  <div class="tab" data-view="friends">👥 好友农场</div>
+  <div class="tab" data-view="market">🏪 种子商店</div>
+  <div class="tab" data-view="recycle">♻️ 回收站</div>
+</div>
+
+<main>
+  <div id="myfarmView" class="farm-wrap">
+    <div class="farm-lab">点击地块进行操作 · 当前工具：<b id="curToolName">选择种子</b></div>
+    <div class="farm-grid" id="farmGrid"></div>
+  </div>
+
+  <div id="pastureView" class="pasture-wrap">
+    <!-- Pet Zone -->
+    <div class="zone-wrap active" id="zonePet">
+      <div class="zone-hd">
+        <div class="zone-title">🐾 宠物小屋</div>
+        <span class="zone-badge" id="petBadge">已解锁</span>
+      </div>
+      <div class="zone-desc">选择一个忠实伙伴陪伴你经营农场</div>
+      <div class="zone-grid cols-1" id="petGrid"></div>
+    </div>
+    <!-- Flock Zone -->
+    <div class="zone-wrap" id="zoneFlock">
+      <div class="zone-hd">
+        <div class="zone-title">🐔 禽舍</div>
+        <span class="zone-badge" id="flockBadge">Lv.2 解锁</span>
+      </div>
+      <div class="zone-desc">饲养鸡鸭，收集蛋类</div>
+      <div class="zone-toolbar" id="flockToolbar"></div>
+      <div class="zone-grid cols-3" id="flockGrid"></div>
+    </div>
+    <!-- Pond Zone -->
+    <div class="zone-wrap" id="zonePond">
+      <div class="zone-hd">
+        <div class="zone-title">🐟 鱼塘</div>
+        <span class="zone-badge" id="pondBadge">Lv.3 解锁</span>
+      </div>
+      <div class="zone-desc">修建鱼塘，慢慢养鱼</div>
+      <div class="zone-toolbar" id="pondToolbar"></div>
+      <div class="zone-grid cols-2" id="pondGrid"></div>
+    </div>
+    <!-- Barn Zone -->
+    <div class="zone-wrap" id="zoneBarn">
+      <div class="zone-hd">
+        <div class="zone-title">🐄 畜栏</div>
+        <span class="zone-badge" id="barnBadge">Lv.4 解锁</span>
+      </div>
+      <div class="zone-desc">饲养牛羊马，收获奶毛等珍贵产品</div>
+      <div class="zone-toolbar" id="barnToolbar"></div>
+      <div class="zone-grid cols-3" id="barnGrid"></div>
+    </div>
+    <!-- Exotic Zone -->
+    <div class="zone-wrap" id="zoneExotic">
+      <div class="zone-hd">
+        <div class="zone-title">🦚 奇趣乐园</div>
+        <span class="zone-badge" id="exoticBadge">Lv.6 解锁</span>
+      </div>
+      <div class="zone-desc">珍稀动物，高价值产出</div>
+      <div class="zone-toolbar" id="exoticToolbar"></div>
+      <div class="zone-grid cols-3" id="exoticGrid"></div>
+    </div>
+  </div>
+
+  <div id="houseView" class="house-wrap">
+    <div class="room-nav" id="roomNav">
+      <div class="room-tab active" data-room="living" onclick="switchRoom('living')">🛋️ 客厅</div>
+      <div class="room-tab" data-room="kitchen" onclick="switchRoom('kitchen')">🍳 厨房</div>
+      <div class="room-tab" data-room="tv" onclick="switchRoom('tv')">📺 电视</div>
+      <div class="room-tab" data-room="bed" onclick="switchRoom('bed')">🛏️ 卧室</div>
+    </div>
+    <div class="energy-bar" id="energyBar">
+      <span>⚡ 体力</span>
+      <div class="eb-track"><div class="eb-fill" id="ebFill"></div></div>
+      <span id="ebTxt">100</span>
+    </div>
+
+    <!-- Living Room: Chat -->
+    <div class="room active" id="roomLiving">
+      <div class="room-hd">🛋️ 客厅 <span class="room-sub">和伙伴聊天吧</span></div>
+      <div class="chat-box" id="chatBox">
+        <div class="chat-msgs" id="chatMsgs"></div>
+        <div class="chat-bar">
+          <input type="text" class="chat-in" id="chatIn" placeholder="说点什么..." maxlength="100" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="chat-send" onclick="sendChat()">发送</button>
+        </div>
+      </div>
+      <div class="chat-hint">💡 在另一个标签页打开此页面，即可两人聊天</div>
+    </div>
+
+    <!-- Kitchen: Cooking -->
+    <div class="room" id="roomKitchen">
+      <div class="room-hd">🍳 厨房 <span class="room-sub">用食材烹饪美味</span></div>
+      <div class="cook-area">
+        <div class="cook-pots">
+          <div class="cook-pot" id="cookSlot0"><span class="cook-q">?</span></div>
+          <div class="cook-plus">+</div>
+          <div class="cook-pot" id="cookSlot1"><span class="cook-q">?</span></div>
+          <div class="cook-eq">=</div>
+          <div class="cook-pot cook-result" id="cookResult"><span class="cook-q">?</span></div>
+        </div>
+        <button class="cook-btn" onclick="tryCook()">🔥 开始烹饪</button>
+        <button class="cook-btn cook-clear" onclick="clearCook()">清空</button>
+      </div>
+      <div class="cook-inv">
+        <div class="cook-inv-t">可用食材</div>
+        <div class="cook-inv-g" id="cookInv"></div>
+      </div>
+    </div>
+
+    <!-- TV Room -->
+    <div class="room" id="roomTv">
+      <div class="room-hd">📺 电视房 <span class="room-sub">看看外面的世界</span></div>
+      <div class="tv-set">
+        <div class="tv-screen" id="tvScr">
+          <div class="tv-ch" id="tvCh">频道 1</div>
+          <div class="tv-ct" id="tvCt"></div>
+        </div>
+      </div>
+      <div class="tv-ctrl">
+        <button class="tv-btn" onclick="tvPrev()">◀ 上个频道</button>
+        <button class="tv-btn" onclick="tvNext()">下个频道 ▶</button>
+      </div>
+    </div>
+
+    <!-- Bedroom -->
+    <div class="room" id="roomBed">
+      <div class="room-hd">🛏️ 卧室 <span class="room-sub">休息恢复体力</span></div>
+      <div class="bed-area">
+        <div class="bed-vis" id="bedVis">🛏️</div>
+        <div class="bed-info">
+          <div>当前：第 <b id="dayNum">1</b> 天</div>
+          <div>体力：<b id="bedEnergy">100</b> / 100</div>
+        </div>
+        <button class="sleep-btn" onclick="goSleep()">💤 睡觉（进入下一天）</button>
+        <div class="sleep-msg" id="sleepMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="friendView" class="friend-farm">
+    <div class="friend-list" id="friendList"></div>
+    <div style="text-align:right;padding:0 12px"><button onclick="refreshFriends()" style="font-size:12px;padding:4px 10px;border:1px solid var(--card-b);border-radius:6px;background:var(--card);cursor:pointer;color:var(--txt-l)">🔄 刷新好友</button></div>
+    <div class="ff-head">
+      <div class="ff-info">
+        <div class="ff-av" id="ffAv">🐱</div>
+        <div>
+          <div class="ff-nm" id="ffNm">小花</div>
+          <div class="ff-st" id="ffSt">在线</div>
+        </div>
+      </div>
+      <div class="ff-acts">
+        <button class="ff-btn" onclick="waterFriendFarm()">💧 帮浇水</button>
+        <button class="ff-btn steal" id="stealBtn" onclick="stealFromFriend()">🤫 偷菜</button>
+      </div>
+    </div>
+    <div class="farm-grid" id="friendGrid"></div>
+  </div>
+
+  <div id="marketView" class="market">
+    <h3>🏪 种子商店</h3>
+    <div class="mk-grid" id="mkGrid"></div>
+  </div>
+
+  <div id="recycleView" class="recycle">
+    <h3>♻️ 公共回收站</h3>
+    <p class="desc">将收获的农产品回收，换取金币。回收价格为作物售价的 80%。这是游戏内金币的主要回收渠道，维持虚拟经济平衡。</p>
+    <div id="invGrid" class="inv-grid"></div>
+  </div>
+</main>
+
+<div class="toolbar" id="toolbar">
+  <div class="tool" data-tool="seed" onclick="selectTool('seed')">
+    🌱<span class="tip">种植</span>
+  </div>
+  <div class="tool" data-tool="water" onclick="selectTool('water')">
+    💧<span class="tip">浇水</span>
+  </div>
+  <div class="tool" data-tool="harvest" onclick="selectTool('harvest')">
+    🧺<span class="tip">收获</span>
+  </div>
+  <div class="tdiv"></div>
+  <div class="tool-info" id="toolInfo">选择种子，点击空地种植</div>
+</div>
+
+<div class="seed-pk" id="seedPk">
+  <h4>选择要种植的作物</h4>
+  <div id="seedOpts"></div>
+</div>
+
+<div class="animal-pk" id="animalPk">
+  <h4>选择要购买的动物</h4>
+  <div id="animalOpts"></div>
+</div>
+
+<div class="pet-sel hide" id="petSelDlg">
+  <div class="ps-box">
+    <h2>选择你的第一个伙伴</h2>
+    <p>每个农场主都需要一个忠实的朋友，选一个吧！</p>
+    <div class="ps-opts">
+      <div class="ps-opt" onclick="choosePet('cat')">
+        <span class="ps-em">🐱</span>
+        <div class="ps-nm">小猫</div>
+        <div class="ps-desc">灵巧可爱，偶尔带来小惊喜</div>
+      </div>
+      <div class="ps-opt" onclick="choosePet('dog')">
+        <span class="ps-em">🐶</span>
+        <div class="ps-nm">小狗</div>
+        <div class="ps-desc">忠诚可靠，守护你的农场</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="welcome" id="welcomeDlg">
+  <div class="wbox">
+    <h2>🌾 欢迎来到开心农场</h2>
+    <p>这是一个社区农场小游戏原型，体验种菜、养殖、烹饪和串门的乐趣。</p>
+    <div class="wt">
+      🌱 选种子 → 点空地种植<br>
+      💧 浇水加速生长（有冷却）<br>
+      🧺 作物成熟后点击收获<br>
+      🐾 开局选择宠物（猫/狗）<br>
+      🐔 升级解锁禽舍/鱼塘/畜栏<br>
+      🤫 去好友农场偷菜<br>
+      ♻️ 回收农产品换金币<br>
+      🏠 回家做饭、看电视、聊天<br>
+      💤 睡觉恢复体力进入新一天<br>
+      ⚡ 操作消耗体力，注意分配
+    </div>
+    <button onclick="closeWelcome()">开始游戏</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════════════════
+const CROPS = {
+  carrot:      {name:'胡萝卜',emoji:'🥕',seed:'🌱',stages:['🌱','🌿','🥬','🥕'],growTime:30,cost:5,harvest:15,exp:2},
+  tomato:      {name:'番茄',  emoji:'🍅',seed:'🌱',stages:['🌱','🌿','🪴','🍅'],growTime:60,cost:10,harvest:30,exp:4},
+  corn:        {name:'玉米',  emoji:'🌽',seed:'🌱',stages:['🌱','🌿','🌾','🌽'],growTime:90,cost:20,harvest:55,exp:6},
+  strawberry:  {name:'草莓',  emoji:'🍓',seed:'🌱',stages:['🌱','🌿','🌸','🍓'],growTime:120,cost:30,harvest:80,exp:8},
+  watermelon:  {name:'西瓜',  emoji:'🍉',seed:'🌱',stages:['🌱','🌿','🍃','🍉'],growTime:180,cost:50,harvest:130,exp:12},
+};
+
+const ANIMALS = {
+  // Pet zone
+  cat:       {name:'小猫',emoji:'🐱',zone:'pet',cost:0,feedInterval:60,productInterval:90,productValue:15,productName:'毛线球',product:'🧶',exp:2,desc:'偶尔带来小惊喜'},
+  dog:       {name:'小狗',emoji:'🐶',zone:'pet',cost:0,feedInterval:60,productInterval:90,productValue:15,productName:'骨头',product:'🦴',exp:2,desc:'忠诚守护农场'},
+  // Flock zone
+  chicken:   {name:'鸡',emoji:'🐔',zone:'flock',cost:30,feedInterval:45,productInterval:60,productValue:20,productName:'鸡蛋',product:'🥚',exp:3},
+  duck:      {name:'鸭',emoji:'🦆',zone:'flock',cost:35,feedInterval:50,productInterval:70,productValue:22,productName:'鸭蛋',product:'🥚',exp:3},
+  // Pond zone
+  fish:      {name:'鲤鱼',emoji:'🐟',zone:'pond',cost:25,feedInterval:80,productInterval:150,productValue:40,productName:'鲜鱼',product:'🐠',exp:5},
+  koi:       {name:'锦鲤',emoji:'🎏',zone:'pond',cost:60,feedInterval:100,productInterval:200,productValue:80,productName:'金鳞',product:'✨',exp:8},
+  // Barn zone
+  cow:       {name:'牛',emoji:'🐄',zone:'barn',cost:80,feedInterval:60,productInterval:90,productValue:50,productName:'牛奶',product:'🥛',exp:6},
+  sheep:     {name:'羊',emoji:'🐑',zone:'barn',cost:60,feedInterval:50,productInterval:75,productValue:35,productName:'羊毛',product:'🧶',exp:5},
+  horse:     {name:'马',emoji:'🐴',zone:'barn',cost:120,feedInterval:70,productInterval:110,productValue:60,productName:'马鬃',product:'💇',exp:7},
+  // Exotic zone
+  rabbit:    {name:'兔子',emoji:'🐰',zone:'exotic',cost:50,feedInterval:40,productInterval:55,productValue:30,productName:'兔毛',product:'🧸',exp:4},
+  bee:       {name:'蜜蜂',emoji:'🐝',zone:'exotic',cost:70,feedInterval:55,productInterval:80,productValue:45,productName:'蜂蜜',product:'🍯',exp:6},
+  peacock:   {name:'孔雀',emoji:'🦚',zone:'exotic',cost:150,feedInterval:90,productInterval:140,productValue:100,productName:'孔雀翎',product:'🪶',exp:10},
+};
+
+const ZONES = {
+  pet:    {name:'宠物小屋',emoji:'🐾',unlockLevel:1,slots:1,slotClass:'pet-slot',gridId:'petGrid',toolbarId:null,desc:'选择一个忠实伙伴'},
+  flock:  {name:'禽舍',emoji:'🐔',unlockLevel:2,slots:6,slotClass:'flock-slot',gridId:'flockGrid',toolbarId:'flockToolbar',desc:'饲养鸡鸭，收集蛋类'},
+  pond:   {name:'鱼塘',emoji:'🐟',unlockLevel:3,slots:4,slotClass:'pond-slot',gridId:'pondGrid',toolbarId:'pondToolbar',desc:'修建鱼塘养鱼'},
+  barn:   {name:'畜栏',emoji:'🐄',unlockLevel:4,slots:6,slotClass:'barn-slot',gridId:'barnGrid',toolbarId:'barnToolbar',desc:'饲养牛羊马'},
+  exotic: {name:'奇趣乐园',emoji:'🦚',unlockLevel:6,slots:6,slotClass:'exotic-slot',gridId:'exoticGrid',toolbarId:'exoticToolbar',desc:'珍稀动物'},
+};
+const ZONE_ORDER = ['pet','flock','pond','barn','exotic'];
+
+const WEATHERS = [
+  {id:'sunny', name:'晴天',icon:'☀️',mult:1.0,effect:'生长速度正常'},
+  {id:'rainy', name:'雨天',icon:'🌧️',mult:1.5,effect:'生长速度 +50%'},
+  {id:'drought',name:'干旱',icon:'🏜️',mult:0.5,effect:'生长速度 -50%'},
+  {id:'windy', name:'大风',icon:'💨',mult:0.8,effect:'生长速度 -20%'},
+  {id:'storm', name:'暴风雨',icon:'⛈️',mult:0.3,effect:'生长速度 -70%'},
+];
+
+const FRIENDS = [];
+
+const COLS=6, ROWS=4, TOTAL=COLS*ROWS;
+const WATER_CD=30000; // 30s cooldown
+const HARVEST_WINDOW=120000; // 2min until wither
+const STEAL_PCT=0.15; // 15% of harvest value
+const MAX_STEALS=5;
+const RECYCLE_PCT=0.8; // 80% of harvest value
+
+// Zone constants
+const FEED_COST=5; // coins per feed
+
+// Energy costs
+const ENERGY_COSTS = {plant:3,water:2,harvest:2,feed:2,collect:1};
+
+// Recipes: [ingredient1_key, ingredient2_key] → result
+const RECIPES = [
+  {in:['carrot','cow_product'],     out:'carrot_soup',   name:'胡萝卜浓汤',emoji:'🍲',energy:30,value:40},
+  {in:['tomato','chicken_product'], out:'tomato_salad',  name:'番茄蛋沙拉',emoji:'🥗',energy:25,value:35},
+  {in:['fish','tomato'],            out:'fish_soup',     name:'鲜鱼番茄汤',emoji:'🍜',energy:40,value:55},
+  {in:['bee_product','chicken_product'], out:'honey_cake',name:'蜂蜜蛋糕',emoji:'🍰',energy:50,value:70},
+  {in:['fish','corn'],              out:'grilled_fish',  name:'烤玉米鱼',emoji:'🐠',energy:35,value:50},
+  {in:['cow_product','bee_product'],out:'milk_shake',    name:'蜂蜜奶昔',emoji:'🥤',energy:35,value:45},
+  {in:['strawberry','cow_product'], out:'berry_cream',   name:'草莓奶油',emoji:'🍨',energy:45,value:60},
+  {in:['watermelon','sugar'],       out:'watermelon_juice',name:'西瓜汁',emoji:'🧃',energy:20,value:30},
+  {in:['duck_product','corn'],      out:'duck_rice',     name:'烤鸭饭',emoji:'🍱',energy:45,value:65},
+  {in:['sheep_product','tomato'],   out:'lamb_stew',     name:'羊肉煲',emoji:'🥘',energy:50,value:70},
+];
+
+// Sugar is a basic ingredient from sugarcane (treated as crop)
+const BASIC_INGREDIENTS = {sugar:{name:'糖',emoji:'🍬',source:'crop'}};
+
+// TV channels
+const TV_CHANNELS = [
+  {name:'天气预报',content:()=>`<span class="tv-big">${state.weather.icon}</span>今日天气：<b>${state.weather.name}</b><br>${state.weather.effect}<br><br>农场第 ${state.day} 天`},
+  {name:'农场时间',content:()=>{let d=new Date();return `<span class="tv-big">🕐</span>现在时间<br><b>${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}</b><br><br>你已经经营农场 ${state.day} 天了`}},
+  {name:'农场新闻',content:()=>{
+    let news=['今年收成不错，粮价稳中有升','专家建议：多养蜜蜂，蜂蜜供不应求','宠物市场火热，猫粮销量超过狗粮','鱼塘迎来丰收季，鲤鱼价格上涨','畜牧业发展迅速，牛羊需求旺盛','奇趣动物成为新宠，孔雀翎价格飙升'];
+    return `<span class="tv-big">📰</span>农场日报<br><br>${news[Math.floor(Math.random()*news.length)]}`}},
+  {name:'动画片',content:()=>{let shows=['🐑 小羊肖恩：今天又和牧羊人斗智斗勇','🐱 哆啦A梦：大雄又忘了写作业','🐶 忠犬八公：等待是最长情的告白','🐟 大鱼海棠：北冥有鱼，其名为鲲'];return `<span class="tv-big">📺</span>正在播放<br><br>${shows[Math.floor(Math.random()*shows.length)]}`}},
+  {name:'信号丢失',content:()=>'<span class="tv-big">📡</span><br>暂无信号...<br>请稍后再试'},
+];
+
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
+let state = {
+  coins:100, exp:0, level:1, energy:100, day:1,
+  plots: Array.from({length:TOTAL},()=>({crop:null,plantedAt:null,growth:0,watered:false,wateredAt:0,readyAt:null,harvested:false})),
+  zones: {
+    pet:    [{animal:null,fedAt:0,productReady:false,productAt:null,hunger:100}],
+    flock:  Array.from({length:6},()=>({animal:null,fedAt:0,productReady:false,productAt:null,hunger:100})),
+    pond:   Array.from({length:4},()=>({animal:null,fedAt:0,productReady:false,productAt:null,hunger:100})),
+    barn:   Array.from({length:6},()=>({animal:null,fedAt:0,productReady:false,productAt:null,hunger:100})),
+    exotic: Array.from({length:6},()=>({animal:null,fedAt:0,productReady:false,productAt:null,hunger:100})),
+  },
+  petChosen: false,
+  inventory:{},
+  cookedItems:{}, // cooked dishes inventory
+  weather: WEATHERS[0],
+  currentTool:'seed',
+  selectedSeed:'carrot',
+  activeZone: null,
+  zoneTool: 'buy',
+  selectedAnimal:'chicken',
+  currentView:'myfarm',
+  currentFriend:0,
+  stealsToday:0,
+  friendPlots:{},
+  unlocked:9,
+  // House state
+  chatName: '',
+  chatAvatar: '',
+  chatMessages: [],
+  cookSlots: [null, null], // two ingredient slots
+  tvChannel: 0,
+  activeRoom: 'living',
+};
+
+// Friend farm data loaded from server on demand
+
+// Generate chat identity - now handled by login screen
+const LOGIN_AVATARS = ['🧑','👧','👦','🧒','👩','👨','👱','🧑‍🌾','👧‍🌾','👦‍🌾','🧔','👵'];
+let selectedAvatar = '';
+
+// Check for saved login
+function checkSavedLogin(){
+  try{
+    let saved = localStorage.getItem('farm-login');
+    if(saved){
+      let data = JSON.parse(saved);
+      if(data.name && data.avatar){
+        state.chatName = data.name;
+        state.chatAvatar = data.avatar;
+        document.getElementById('loginScreen').classList.add('hide');
+        updatePlayerDisplay();
+        // Immediately register on server, then start auto-save
+        saveStateToServer();
+        startAutoSave();
+        loadOwnState();
+        syncFriendsList();
+        return true;
+      }
+    }
+  }catch(e){}
+  return false;
+}
+
+// Render avatar grid
+function renderAvatarGrid(){
+  let grid = document.getElementById('avatarGrid');
+  let html = '';
+  LOGIN_AVATARS.forEach(av=>{
+    html += '<div class="avatar-opt" data-avatar="'+av+'" onclick="pickAvatar(this,\''+av+'\')">'+av+'</div>';
+  });
+  grid.innerHTML = html;
+}
+
+function pickAvatar(el, av){
+  document.querySelectorAll('.avatar-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAvatar = av;
+  checkLoginReady();
+}
+
+function checkLoginReady(){
+  let name = document.getElementById('loginName').value.trim();
+  let btn = document.getElementById('loginBtn');
+  btn.disabled = !(name.length >= 1 && selectedAvatar);
+}
+
+function doLogin(){
+  let name = document.getElementById('loginName').value.trim();
+  if(!name || !selectedAvatar) return;
+  state.chatName = name;
+  state.chatAvatar = selectedAvatar;
+  // Save to localStorage
+  try{
+    localStorage.setItem('farm-login', JSON.stringify({name:name, avatar:selectedAvatar}));
+    localStorage.setItem('farm-last-avatar', selectedAvatar);
+    localStorage.setItem('farm-last-name', name);
+  }catch(e){}
+  document.getElementById('loginScreen').classList.add('hide');
+  updatePlayerDisplay();
+  // Immediately register on server, then start auto-save
+  saveStateToServer();
+  startAutoSave();
+  loadOwnState();
+  // Sync friends list
+  syncFriendsList();
+}
+
+function switchAccount(){
+  if(confirm('确定要切换账号吗？当前进度不会丢失。')){
+    try{
+      localStorage.removeItem('farm-login');
+      localStorage.removeItem('farm-last-avatar');
+      localStorage.removeItem('farm-last-name');
+    }catch(e){}
+    document.getElementById('loginName').value = '';
+    selectedAvatar = '';
+    document.querySelectorAll('.avatar-opt').forEach(o=>o.classList.remove('selected'));
+    document.getElementById('loginBtn').disabled = true;
+    document.getElementById('loginScreen').classList.remove('hide');
+  }
+}
+
+function updatePlayerDisplay(){
+  let av = document.getElementById('playerAvatar');
+  let nm = document.getElementById('playerName');
+  if(av) av.textContent = state.chatAvatar || '🧑';
+  if(nm) nm.textContent = state.chatName || '玩家';
+}
+
+// Listen for name input
+document.getElementById('loginName').addEventListener('input', checkLoginReady);
+
+// Init login
+renderAvatarGrid();
+if(!checkSavedLogin()){
+  // Restore last avatar selection
+  try{
+    let lastAv = localStorage.getItem('farm-last-avatar');
+    if(lastAv){
+      selectedAvatar = lastAv;
+      let el = document.querySelector('.avatar-opt[data-avatar="'+lastAv+'"]');
+      if(el) el.classList.add('selected');
+      checkLoginReady();
+    }
+  }catch(e){}
+  // Restore last name
+  try{
+    let lastName = localStorage.getItem('farm-last-name');
+    if(lastName) document.getElementById('loginName').value = lastName;
+    checkLoginReady();
+  }catch(e){}
+}
+
+// ════════════════════════════════════════════════════════
+//  CHAT (HTTP Polling — FC Backend)
+// ════════════════════════════════════════════════════════
+// API base URL — FC backend
+const API_BASE = 'https://chat-room-afgnquibtv.cn-hangzhou.fcapp.run';
+
+let lastMsgTime = 0;
+let chatPollTimer = null;
+let presenceTimer = null;
+let chatInHouse = false;
+
+// Send chat message
+async function sendChat(){
+  let input = document.getElementById('chatIn');
+  let text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  
+  if(!API_BASE){
+    // No backend configured, show error
+    toast('聊天服务未配置，需要部署后端');
+    return;
+  }
+  
+  try{
+    let resp = await fetch(API_BASE + '/api/message', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        name: state.chatName,
+        avatar: state.chatAvatar,
+        text: text
+      })
+    });
+    if(resp.ok){
+      let data = await resp.json();
+      // Message will be picked up by poll
+    } else {
+      toast('发送失败');
+    }
+  }catch(e){
+    toast('网络错误');
+  }
+}
+
+// Poll for new messages
+async function pollMessages(){
+  if(!API_BASE || !chatInHouse) return;
+  try{
+    let resp = await fetch(API_BASE + '/api/messages?since=' + lastMsgTime);
+    if(resp.ok){
+      let data = await resp.json();
+      if(data.messages && data.messages.length > 0){
+        data.messages.forEach(m => {
+          // Avoid duplicates
+          if(!state.chatMessages.find(x => x.time === m.time && x.name === m.name && x.text === m.text)){
+            state.chatMessages.push(m);
+          }
+        });
+        // Update lastMsgTime
+        if(data.serverTime) lastMsgTime = data.serverTime;
+        else if(data.messages.length > 0){
+          let maxTime = Math.max(...data.messages.map(m => m.time || 0));
+          if(maxTime > lastMsgTime) lastMsgTime = maxTime;
+        }
+        renderChat();
+      }
+    }
+  }catch(e){
+    // Silent fail for polling
+  }
+}
+
+// Post presence
+async function postPresence(){
+  if(!API_BASE || !chatInHouse) return;
+  try{
+    await fetch(API_BASE + '/api/presence', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        name: state.chatName,
+        avatar: state.chatAvatar
+      })
+    });
+  }catch(e){}
+}
+
+// Fetch online users
+async function fetchPresence(){
+  if(!API_BASE || !chatInHouse) return;
+  try{
+    let resp = await fetch(API_BASE + '/api/presence');
+    if(resp.ok){
+      let data = await resp.json();
+      let onlineNames = (data.users || []).map(u => u.name);
+      let otherOnline = onlineNames.filter(n => n !== state.chatName);
+      // Update chat hint
+      let hint = document.querySelector('.chat-hint');
+      if(hint){
+        if(otherOnline.length > 0){
+          hint.textContent = '🟢 在线: ' + otherOnline.join(', ');
+        } else {
+          hint.textContent = '💡 等待其他伙伴加入...';
+        }
+      }
+    }
+  }catch(e){}
+}
+
+function renderChat(){
+  let el = document.getElementById('chatMsgs');
+  if(!el) return;
+  let html = '';
+  let msgs = state.chatMessages.slice(-50); // keep last 50
+  msgs.forEach(m=>{
+    if(m.type==='sys'){
+      html += '<div class="chat-msg sys">'+m.text+'</div>';
+    } else {
+      let isSelf = m.name === state.chatName;
+      let cls = 'chat-msg '+(isSelf?'self':'other');
+      let time = new Date(m.time * 1000); // server time is in seconds
+      let timeStr = time.getHours().toString().padStart(2,'0')+':'+time.getMinutes().toString().padStart(2,'0');
+      html += '<div class="'+cls+'">';
+      if(!isSelf) html += '<div class="cm-name">'+(m.avatar||'')+' '+m.name+'</div>';
+      html += '<div>'+escHtml(m.text)+'</div>';
+      html += '<div class="cm-time">'+timeStr+'</div>';
+      html += '</div>';
+    }
+  });
+  el.innerHTML = html;
+  el.scrollTop = el.scrollHeight;
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Start/stop chat polling
+function startChatPolling(){
+  if(chatPollTimer) return;
+  chatInHouse = true;
+  // Post presence immediately
+  postPresence();
+  // Announce join
+  if(API_BASE){
+    fetch(API_BASE + '/api/system', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text: '💬 ' + state.chatName + ' 进入了房子'})
+    }).catch(()=>{});
+  }
+  state.chatMessages.push({type:'sys', text:'💬 你进入了房子，等待另一个伙伴...'});
+  renderChat();
+  // Poll messages every 2s
+  chatPollTimer = setInterval(pollMessages, 2000);
+  // Post presence every 10s
+  presenceTimer = setInterval(()=>{
+    postPresence();
+    fetchPresence();
+  }, 10000);
+}
+
+function stopChatPolling(){
+  chatInHouse = false;
+  if(chatPollTimer){ clearInterval(chatPollTimer); chatPollTimer = null; }
+  if(presenceTimer){ clearInterval(presenceTimer); presenceTimer = null; }
+}
+
+// Announce presence on house entry
+function announceChatPresence(){
+  startChatPolling();
+}
+
+// ════════════════════════════════════════════════════════
+//  FARM STATE SYNC
+// ════════════════════════════════════════════════════════
+let saveTimer = null;
+let lastSaveTime = 0;
+const SAVE_INTERVAL = 15000; // Save every 15 seconds
+
+// Save current state to server
+async function saveStateToServer(){
+  if(!API_BASE) return;
+  try{
+    // Build a serializable state object
+    let saveData = {
+      coins: state.coins,
+      exp: state.exp,
+      level: state.level,
+      energy: state.energy,
+      day: state.day,
+      plots: state.plots,
+      zones: state.zones,
+      petChosen: state.petChosen,
+      inventory: state.inventory,
+      cookedItems: state.cookedItems,
+      unlocked: state.unlocked,
+      weather: state.weather,
+      savedAt: Date.now()
+    };
+    
+    await fetch(API_BASE + '/api/farm/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        name: state.chatName,
+        avatar: state.chatAvatar,
+        state: saveData
+      })
+    });
+    lastSaveTime = Date.now();
+  }catch(e){
+    // Silent fail
+  }
+}
+
+// Load a player's state from server
+async function loadStateFromServer(name){
+  if(!API_BASE) return null;
+  try{
+    let resp = await fetch(API_BASE + '/api/farm/load?name=' + encodeURIComponent(name));
+    if(resp.ok){
+      let data = await resp.json();
+      if(data.exists && data.state) return data.state;
+    }
+  }catch(e){}
+  return null;
+}
+
+// Fetch list of all registered players
+async function syncFriendsList(){
+  if(!API_BASE) return;
+  try{
+    let resp = await fetch(API_BASE + '/api/players');
+    if(resp.ok){
+      let data = await resp.json();
+      if(data.players && data.players.length > 0){
+        // Update FRIENDS with real players
+        updateFriendsFromPlayers(data.players);
+      }
+    }
+  }catch(e){}
+}
+
+// Update friend list from server players
+function updateFriendsFromPlayers(players){
+  // Filter out self
+  let others = players.filter(p => p.name !== state.chatName);
+  if(others.length === 0) return;
+  
+  // Update FRIENDS array
+  FRIENDS.length = 0;
+  others.forEach(p => {
+    FRIENDS.push({
+      name: p.name,
+      avatar: p.avatar || '🧑',
+      status: p.online ? '在线' : '离线',
+      online: p.online || false,
+      level: p.level || 1,
+      coins: p.coins || 0
+    });
+  });
+  
+  // Clear stale cached farm data — will reload on switchFriend
+  state.friendPlots = {};
+  
+  // Render friend list
+  renderFriendList();
+}
+
+// Start auto-save timer
+function startAutoSave(){
+  if(saveTimer) return;
+  saveTimer = setInterval(saveStateToServer, SAVE_INTERVAL);
+  // Also save on page unload
+  window.addEventListener('beforeunload', saveStateToServer);
+}
+
+// Load own state from server on login
+async function loadOwnState(){
+  if(!API_BASE || !state.chatName) return;
+  let saved = await loadStateFromServer(state.chatName);
+  if(saved){
+    // Restore state
+    state.coins = saved.coins ?? state.coins;
+    state.exp = saved.exp ?? state.exp;
+    state.level = saved.level ?? state.level;
+    state.energy = saved.energy ?? state.energy;
+    state.day = saved.day ?? state.day;
+    state.plots = saved.plots ?? state.plots;
+    state.zones = saved.zones ?? state.zones;
+    state.petChosen = saved.petChosen ?? state.petChosen;
+    state.inventory = saved.inventory ?? state.inventory;
+    state.cookedItems = saved.cookedItems ?? state.cookedItems;
+    state.unlocked = saved.unlocked ?? state.unlocked;
+    state.weather = saved.weather ?? state.weather;
+    render();
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  COOKING
+// ════════════════════════════════════════════════════════
+function getCookableIngredients(){
+  let items = [];
+  // Crops from inventory
+  for(let key in state.inventory){
+    if(state.inventory[key]>0){
+      if(CROPS[key]){
+        items.push({key:key,name:CROPS[key].name,emoji:CROPS[key].emoji,count:state.inventory[key],type:'crop'});
+      } else if(key.endsWith('_product')){
+        let aKey = key.replace('_product','');
+        let a = ANIMALS[aKey];
+        if(a) items.push({key:key,name:a.productName,emoji:a.product,count:state.inventory[key],type:'product'});
+      }
+    }
+  }
+  // Cooked items can also be ingredients
+  for(let key in state.cookedItems){
+    if(state.cookedItems[key]>0){
+      items.push({key:key,name:state.cookedItems[key].name,emoji:state.cookedItems[key].emoji,count:state.cookedItems[key].count,type:'cooked'});
+    }
+  }
+  return items;
+}
+
+function selectCookIngredient(idx, itemKey){
+  if(state.cookSlots[idx]) return; // already filled
+  state.cookSlots[idx] = itemKey;
+  renderCooking();
+}
+
+function clearCook(){
+  state.cookSlots = [null, null];
+  document.getElementById('cookResult').innerHTML = '<span class="cook-q">?</span>';
+  document.getElementById('cookResult').classList.remove('filled');
+  renderCooking();
+}
+
+function tryCook(){
+  let s0 = state.cookSlots[0], s1 = state.cookSlots[1];
+  if(!s0 || !s1){ toast('请放入两种食材'); playSound('error'); return; }
+  // Check if we have the ingredients
+  if(!hasIngredient(s0) || !hasIngredient(s1)){ toast('食材不足'); playSound('error'); return; }
+  // Find matching recipe
+  let recipe = findRecipe(s0, s1);
+  if(!recipe){
+    toast('这两种食材无法组合烹饪');
+    playSound('error');
+    return;
+  }
+  // Consume ingredients
+  consumeIngredient(s0);
+  consumeIngredient(s1);
+  // Add result
+  if(state.cookedItems[recipe.out]){
+    state.cookedItems[recipe.out].count++;
+  } else {
+    state.cookedItems[recipe.out] = {name:recipe.name,emoji:recipe.emoji,energy:recipe.energy,value:recipe.value,count:1};
+  }
+  // Show result
+  let resultEl = document.getElementById('cookResult');
+  resultEl.innerHTML = '<span style="font-size:28px">'+recipe.emoji+'</span>';
+  resultEl.classList.add('filled');
+  playSound('harvest');
+  toast('🎉 烹饪成功！获得了'+recipe.emoji+recipe.name+'！');
+  state.cookSlots = [null, null];
+  renderCooking();
+}
+
+function hasIngredient(key){
+  if(state.inventory[key] && state.inventory[key]>0) return true;
+  if(state.cookedItems[key] && state.cookedItems[key].count>0) return true;
+  return false;
+}
+
+function consumeIngredient(key){
+  if(state.inventory[key] && state.inventory[key]>0){
+    state.inventory[key]--;
+    if(state.inventory[key]<=0) delete state.inventory[key];
+  } else if(state.cookedItems[key] && state.cookedItems[key].count>0){
+    state.cookedItems[key].count--;
+    if(state.cookedItems[key].count<=0) delete state.cookedItems[key];
+  }
+}
+
+function findRecipe(a, b){
+  return RECIPES.find(r=>(r.in[0]===a && r.in[1]===b)||(r.in[0]===b && r.in[1]===a));
+}
+
+function renderCooking(){
+  // Update cook slots display
+  for(let i=0;i<2;i++){
+    let el = document.getElementById('cookSlot'+i);
+    let key = state.cookSlots[i];
+    if(key){
+      let info = getIngredientInfo(key);
+      el.innerHTML = '<span style="font-size:28px">'+info.emoji+'</span>';
+      el.classList.add('filled');
+    } else {
+      el.innerHTML = '<span class="cook-q">?</span>';
+      el.classList.remove('filled');
+    }
+  }
+  // Update ingredient grid
+  let el = document.getElementById('cookInv');
+  if(!el) return;
+  let items = getCookableIngredients();
+  if(items.length===0){
+    el.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:16px;color:var(--txt-m);font-size:13px">没有可用食材<br>去农场收获一些作物或收集动物产品吧！</div>';
+    return;
+  }
+  let html = '';
+  items.forEach(item=>{
+    let sel0 = state.cookSlots[0]===item.key;
+    let sel1 = state.cookSlots[1]===item.key;
+    let selected = sel0||sel1;
+    html += '<div class="cook-item'+(selected?' selected':'')+'" onclick="pickCookItem(\''+item.key+'\')">'+
+      '<div class="ci-em">'+item.emoji+'</div>'+
+      '<div class="ci-nm">'+item.name+'</div>'+
+      '<div class="ci-ct">×'+item.count+'</div>'+
+    '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function getIngredientInfo(key){
+  if(CROPS[key]) return {name:CROPS[key].name,emoji:CROPS[key].emoji};
+  if(key.endsWith('_product')){
+    let aKey = key.replace('_product','');
+    let a = ANIMALS[aKey];
+    if(a) return {name:a.productName,emoji:a.product};
+  }
+  if(state.cookedItems[key]) return {name:state.cookedItems[key].name,emoji:state.cookedItems[key].emoji};
+  if(BASIC_INGREDIENTS[key]) return {name:BASIC_INGREDIENTS[key].name,emoji:BASIC_INGREDIENTS[key].emoji};
+  return {name:key,emoji:'?'};
+}
+
+function pickCookItem(key){
+  // Fill first empty slot
+  if(!state.cookSlots[0]){
+    state.cookSlots[0] = key;
+  } else if(!state.cookSlots[1]){
+    state.cookSlots[1] = key;
+  } else {
+    // Both full, replace first
+    state.cookSlots[0] = key;
+  }
+  renderCooking();
+}
+
+// Use a cooked dish to restore energy
+function useCookedItem(key){
+  if(!state.cookedItems[key] || state.cookedItems[key].count<=0){ toast('没有这道菜了'); return; }
+  let dish = state.cookedItems[key];
+  state.energy = Math.min(100, state.energy + dish.energy);
+  state.cookedItems[key].count--;
+  if(state.cookedItems[key].count<=0) delete state.cookedItems[key];
+  playSound('harvest');
+  toast('吃了'+dish.emoji+dish.name+'，恢复了 '+dish.energy+' 点体力！');
+  renderHouse();
+}
+
+// ════════════════════════════════════════════════════════
+//  TV
+// ════════════════════════════════════════════════════════
+function tvNext(){
+  state.tvChannel = (state.tvChannel+1) % TV_CHANNELS.length;
+  renderTV();
+}
+function tvPrev(){
+  state.tvChannel = (state.tvChannel-1+TV_CHANNELS.length) % TV_CHANNELS.length;
+  renderTV();
+}
+function renderTV(){
+  let ch = TV_CHANNELS[state.tvChannel];
+  let chEl = document.getElementById('tvCh');
+  let ctEl = document.getElementById('tvCt');
+  if(chEl) chEl.textContent = '频道 '+(state.tvChannel+1)+'：'+ch.name;
+  if(ctEl) ctEl.innerHTML = ch.content();
+}
+
+// ════════════════════════════════════════════════════════
+//  SLEEP
+// ════════════════════════════════════════════════════════
+function goSleep(){
+  let bedVis = document.getElementById('bedVis');
+  let sleepMsg = document.getElementById('sleepMsg');
+  bedVis.textContent = '😴';
+  bedVis.style.transform = 'scale(0.8) rotate(-10deg)';
+  sleepMsg.textContent = 'zzZ...';
+
+  setTimeout(()=>{
+    state.day++;
+    state.energy = 100;
+    // Reset daily steal count
+    state.stealsToday = 0;
+    // Small bonus coins for sleeping
+    let bonus = 5 + Math.floor(Math.random()*10);
+    state.coins += bonus;
+
+    sleepMsg.textContent = '🌅 天亮了！新的一天开始了（+'+bonus+'💰 休息奖励）';
+    bedVis.textContent = '🛏️';
+    bedVis.style.transform = '';
+    toast('💤 睡了个好觉！体力恢复满，第 '+state.day+' 天开始了！');
+    playSound('coin');
+    render();
+    renderHouse();
+  }, 1500);
+}
+
+// ════════════════════════════════════════════════════════
+//  ROOM SWITCHING
+// ════════════════════════════════════════════════════════
+function switchRoom(room){
+  state.activeRoom = room;
+  document.querySelectorAll('.room-tab').forEach(t=>t.classList.toggle('active',t.dataset.room===room));
+  document.querySelectorAll('.room').forEach(r=>r.classList.remove('active'));
+  let roomEl = document.getElementById('room'+room.charAt(0).toUpperCase()+room.slice(1));
+  if(roomEl) roomEl.classList.add('active');
+
+  // Room-specific init
+  if(room==='living') { renderChat(); }
+  if(room==='kitchen') { renderCooking(); }
+  if(room==='tv') { renderTV(); }
+  if(room==='bed') { renderBedroom(); }
+}
+
+function renderBedroom(){
+  let dayEl = document.getElementById('dayNum');
+  let enEl = document.getElementById('bedEnergy');
+  if(dayEl) dayEl.textContent = state.day;
+  if(enEl) enEl.textContent = state.energy;
+}
+
+function renderHouse(){
+  // Energy bar
+  let ebFill = document.getElementById('ebFill');
+  let ebTxt = document.getElementById('ebTxt');
+  if(ebFill) ebFill.style.width = state.energy+'%';
+  if(ebTxt) ebTxt.textContent = state.energy;
+  // Energy header stat
+  let ev = document.getElementById('energyVal');
+  if(ev) ev.textContent = state.energy;
+  // Room-specific renders
+  if(state.activeRoom==='kitchen') renderCooking();
+  if(state.activeRoom==='tv') renderTV();
+  if(state.activeRoom==='bed') renderBedroom();
+}
+
+// ════════════════════════════════════════════════════════
+//  ENERGY CHECK
+// ════════════════════════════════════════════════════════
+function useEnergy(action){
+  let cost = ENERGY_COSTS[action] || 0;
+  if(state.energy < cost){
+    toast('体力不足！去睡觉休息一下吧 ⚡');
+    playSound('error');
+    return false;
+  }
+  state.energy -= cost;
+  return true;
+}
+
+// ════════════════════════════════════════════════════════
+//  SOUND
+// ════════════════════════════════════════════════════════
+let audioCtx;
+function getAudio(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function playSound(type){
+  try{
+    let ctx = getAudio();
+    let osc = ctx.createOscillator();
+    let gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    gain.gain.value = 0.08;
+    let t = ctx.currentTime;
+    switch(type){
+      case 'plant':
+        osc.frequency.setValueAtTime(400,t);
+        osc.frequency.linearRampToValueAtTime(600,t+0.1);
+        gain.gain.linearRampToValueAtTime(0,t+0.15);
+        osc.start(t); osc.stop(t+0.15); break;
+      case 'water':
+        osc.type='sine';
+        osc.frequency.setValueAtTime(800,t);
+        osc.frequency.linearRampToValueAtTime(400,t+0.2);
+        gain.gain.linearRampToValueAtTime(0,t+0.25);
+        osc.start(t); osc.stop(t+0.25); break;
+      case 'harvest':
+        osc.frequency.setValueAtTime(500,t);
+        osc.frequency.linearRampToValueAtTime(800,t+0.1);
+        osc.frequency.linearRampToValueAtTime(1000,t+0.2);
+        gain.gain.linearRampToValueAtTime(0,t+0.3);
+        osc.start(t); osc.stop(t+0.3); break;
+      case 'steal':
+        osc.type='triangle';
+        osc.frequency.setValueAtTime(300,t);
+        osc.frequency.linearRampToValueAtTime(500,t+0.15);
+        osc.frequency.linearRampToValueAtTime(200,t+0.3);
+        gain.gain.linearRampToValueAtTime(0,t+0.35);
+        osc.start(t); osc.stop(t+0.35); break;
+      case 'coin':
+        osc.type='sine';
+        osc.frequency.setValueAtTime(1200,t);
+        osc.frequency.linearRampToValueAtTime(1600,t+0.08);
+        gain.gain.linearRampToValueAtTime(0,t+0.15);
+        osc.start(t); osc.stop(t+0.15); break;
+      case 'error':
+        osc.type='square';
+        gain.gain.value=0.04;
+        osc.frequency.setValueAtTime(200,t);
+        osc.frequency.linearRampToValueAtTime(150,t+0.15);
+        gain.gain.linearRampToValueAtTime(0,t+0.2);
+        osc.start(t); osc.stop(t+0.2); break;
+    }
+  }catch(e){}
+}
+
+// ════════════════════════════════════════════════════════
+//  TOAST & EFFECTS
+// ════════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg){
+  let el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'),1800);
+}
+
+function floatText(plotEl, text, color){
+  let ft = document.createElement('div');
+  ft.className='float-text';
+  ft.style.color = color||'#4a9c35';
+  ft.textContent = text;
+  ft.style.left='50%'; ft.style.top='20%';
+  ft.style.transform='translateX(-50%)';
+  plotEl.appendChild(ft);
+  setTimeout(()=>ft.remove(),1000);
+}
+
+function particles(plotEl, color, count){
+  for(let i=0;i<(count||5);i++){
+    let p = document.createElement('div');
+    p.className='particle';
+    p.style.background = color||'#4a9c35';
+    p.style.left='50%'; p.style.top='50%';
+    let angle = Math.random()*Math.PI*2;
+    let dist = 20+Math.random()*30;
+    p.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+    p.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+    plotEl.appendChild(p);
+    setTimeout(()=>p.remove(),800);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  GAME LOGIC
+// ════════════════════════════════════════════════════════
+function getGrowthMult(){
+  return state.weather.mult;
+}
+
+function updatePlotGrowth(plot, now){
+  if(!plot.crop || plot.growth>=1) return;
+  let crop = CROPS[plot.crop];
+  let elapsed = (now - plot.plantedAt)/1000; // seconds
+  let effectiveTime = elapsed * getGrowthMult();
+  if(plot.watered){
+    effectiveTime += 10; // watering adds 10s of growth
+  }
+  plot.growth = Math.min(1, effectiveTime / crop.growTime);
+  if(plot.growth>=1 && !plot.readyAt){
+    plot.readyAt = now;
+  }
+}
+
+function getStageIndex(growth){
+  if(growth<0.25) return 0;
+  if(growth<0.55) return 1;
+  if(growth<0.95) return 2;
+  return 3;
+}
+
+function plantCrop(plotIdx){
+  let plot = state.plots[plotIdx];
+  if(plot.crop){ toast('这块地已经种了东西'); playSound('error'); return; }
+  if(plotIdx >= state.unlocked){ toast('地块未解锁'); playSound('error'); return; }
+  if(!useEnergy('plant')) return;
+  let crop = CROPS[state.selectedSeed];
+  if(state.coins < crop.cost){ toast('金币不足！需要 '+crop.cost+' 金币'); playSound('error'); return; }
+  state.coins -= crop.cost;
+  plot.crop = state.selectedSeed;
+  plot.plantedAt = Date.now();
+  plot.growth = 0;
+  plot.watered = false;
+  plot.readyAt = null;
+  plot.harvested = false;
+  playSound('plant');
+  toast('种下了'+crop.name+'（-'+crop.cost+'💰）');
+  render();
+}
+
+function waterPlot(plotIdx, isFriend, friendIdx){
+  let plots = isFriend ? state.friendPlots[friendIdx] : state.plots;
+  let plot = plots[plotIdx];
+  if(!plot.crop){ toast('空地不需要浇水'); return; }
+  if(plot.growth>=1){ toast('已经成熟了，快收获吧！'); return; }
+  let now = Date.now();
+  if(plot.watered && now-plot.wateredAt < WATER_CD){
+    let cd = Math.ceil((WATER_CD-(now-plot.wateredAt))/1000);
+    toast('浇水冷却中（'+cd+'s）'); playSound('error'); return;
+  }
+  if(!isFriend && !useEnergy('water')) return;
+  plot.watered = true;
+  plot.wateredAt = now;
+  playSound('water');
+  if(!isFriend) toast('浇水成功，生长加速！');
+  else toast('帮'+FRIENDS[friendIdx].name+'浇了水 💧');
+  render();
+}
+
+function harvestPlot(plotIdx, isFriend, friendIdx){
+  let plots = isFriend ? state.friendPlots[friendIdx] : state.plots;
+  let plot = plots[plotIdx];
+  if(!plot.crop || plot.growth<1){ toast('还没成熟呢'); playSound('error'); return; }
+  let crop = CROPS[plot.crop];
+  if(!isFriend){
+    if(!useEnergy('harvest')) return;
+    // Add to inventory
+    state.inventory[plot.crop] = (state.inventory[plot.crop]||0)+1;
+    state.exp += crop.exp;
+    // Level up check
+    let newLevel = Math.floor(state.exp/20)+1;
+    if(newLevel>state.level){
+      state.level = newLevel;
+      if(state.unlocked<TOTAL) state.unlocked = Math.min(TOTAL, state.unlocked+3);
+      toast('🎉 升级了！当前 Lv.'+state.level+'，解锁新地块！');
+    }
+    playSound('harvest');
+    toast('收获了'+crop.emoji+crop.name+'！');
+  }
+  plot.crop = null;
+  plot.plantedAt = null;
+  plot.growth = 0;
+  plot.watered = false;
+  plot.readyAt = null;
+  plot.harvested = false;
+  render();
+}
+
+function stealFromFriend(){
+  if(state.stealsToday>=MAX_STEALS){ toast('今天偷菜次数已用完（'+MAX_STEALS+'次）'); playSound('error'); return; }
+  let fi = state.currentFriend;
+  let plots = state.friendPlots[fi];
+  // Find ready plots
+  let readyIdx = [];
+  plots.forEach((p,i)=>{ if(p.crop && p.growth>=1) readyIdx.push(i); });
+  if(readyIdx.length===0){ toast(FRIENDS[fi].name+'的农场没有成熟的作物'); playSound('error'); return; }
+  let idx = readyIdx[Math.floor(Math.random()*readyIdx.length)];
+  let plot = plots[idx];
+  let crop = CROPS[plot.crop];
+  let stolen = Math.ceil(crop.harvest * STEAL_PCT);
+  state.coins += stolen;
+  state.stealsToday++;
+  playSound('steal');
+  toast('从'+FRIENDS[fi].name+'的农场偷了'+crop.emoji+'，获得'+stolen+'💰！');
+  // Remove the crop
+  plot.crop = null; plot.plantedAt=null; plot.growth=0; plot.readyAt=null;
+  render();
+}
+
+function waterFriendFarm(){
+  let fi = state.currentFriend;
+  let plots = state.friendPlots[fi];
+  let watered = 0;
+  let now = Date.now();
+  plots.forEach((p,i)=>{
+    if(p.crop && p.growth<1 && (!p.watered || now-p.wateredAt>=WATER_CD)){
+      p.watered=true; p.wateredAt=now; watered++;
+    }
+  });
+  if(watered===0){ toast('没有需要浇水的地'); return; }
+  playSound('water');
+  toast('帮'+FRIENDS[fi].name+'浇了'+watered+'块地 💧');
+  render();
+}
+
+function sellItem(cropKey){
+  if(!state.inventory[cropKey] || state.inventory[cropKey]<=0){ toast('没有可回收的'+CROPS[cropKey].name); return; }
+  let crop = CROPS[cropKey];
+  let price = Math.ceil(crop.harvest * RECYCLE_PCT);
+  state.inventory[cropKey]--;
+  if(state.inventory[cropKey]<=0) delete state.inventory[cropKey];
+  state.coins += price;
+  playSound('coin');
+  toast('回收了'+crop.emoji+crop.name+'，获得'+price+'💰');
+  render();
+}
+
+function buySeed(cropKey){
+  let crop = CROPS[cropKey];
+  if(state.coins<crop.cost){ toast('金币不足！'); playSound('error'); return; }
+  state.selectedSeed = cropKey;
+  state.currentTool = 'seed';
+  toast('已选择'+crop.name+'种子');
+  render();
+  renderSeedPicker();
+}
+
+// ════════════════════════════════════════════════════════
+//  ZONE LOGIC
+// ════════════════════════════════════════════════════════
+function isZoneUnlocked(zoneKey){
+  return state.level >= ZONES[zoneKey].unlockLevel;
+}
+
+function choosePet(petKey){
+  if(state.petChosen) return;
+  let slot = state.zones.pet[0];
+  slot.animal = petKey;
+  slot.fedAt = Date.now();
+  slot.productReady = false;
+  slot.productAt = null;
+  slot.hunger = 100;
+  state.petChosen = true;
+  document.getElementById('petSelDlg').classList.add('hide');
+  playSound('plant');
+  toast('你选择了'+ANIMALS[petKey].emoji+ANIMALS[petKey].name+'作为伙伴！');
+  render();
+}
+
+function buyZoneAnimal(zoneKey, slotIdx){
+  let zone = state.zones[zoneKey];
+  let slot = zone[slotIdx];
+  if(slot.animal){ toast('这里已经有动物了'); playSound('error'); return; }
+  if(!isZoneUnlocked(zoneKey)){ toast('区域未解锁'); playSound('error'); return; }
+  let animal = ANIMALS[state.selectedAnimal];
+  if(!animal || animal.zone !== zoneKey){ toast('该动物不属于此区域'); playSound('error'); return; }
+  if(state.coins < animal.cost){ toast('金币不足！需要 '+animal.cost+' 金币'); playSound('error'); return; }
+  state.coins -= animal.cost;
+  slot.animal = state.selectedAnimal;
+  slot.fedAt = Date.now();
+  slot.productReady = false;
+  slot.productAt = null;
+  slot.hunger = 100;
+  playSound('plant');
+  toast('买了一只'+animal.emoji+animal.name+'（-'+animal.cost+'💰）');
+  render();
+}
+
+function feedZoneAnimal(zoneKey, slotIdx){
+  let zone = state.zones[zoneKey];
+  let slot = zone[slotIdx];
+  if(!slot.animal){ toast('这里没有动物'); playSound('error'); return; }
+  if(state.coins < FEED_COST){ toast('金币不足！需要 '+FEED_COST+' 金币'); playSound('error'); return; }
+  if(!useEnergy('feed')) return;
+  let now = Date.now();
+  let animal = ANIMALS[slot.animal];
+  if(now - slot.fedAt < animal.feedInterval*1000){
+    let cd = Math.ceil((animal.feedInterval*1000-(now-slot.fedAt))/1000);
+    toast('动物还不饿（'+cd+'s后可再喂）'); playSound('error'); return;
+  }
+  state.coins -= FEED_COST;
+  slot.fedAt = now;
+  slot.hunger = 100;
+  if(!slot.productReady){
+    slot.productAt = now;
+  }
+  playSound('water');
+  toast('喂了'+animal.emoji+animal.name+'（-'+FEED_COST+'💰）');
+  render();
+}
+
+function collectZoneProduct(zoneKey, slotIdx){
+  let zone = state.zones[zoneKey];
+  let slot = zone[slotIdx];
+  if(!slot.animal || !slot.productReady){ toast('没有可收集的产品'); playSound('error'); return; }
+  if(!useEnergy('collect')) return;
+  let animal = ANIMALS[slot.animal];
+  let productKey = slot.animal+'_product';
+  state.inventory[productKey] = (state.inventory[productKey]||0)+1;
+  state.exp += animal.exp;
+  // Level up check
+  let newLevel = Math.floor(state.exp/20)+1;
+  if(newLevel>state.level){
+    state.level = newLevel;
+    if(state.unlocked<TOTAL) state.unlocked = Math.min(TOTAL, state.unlocked+3);
+    // Check zone unlocks
+    ZONE_ORDER.forEach(zk=>{
+      if(ZONES[zk].unlockLevel === newLevel){
+        toast('🎉 升级了！解锁了'+ZONES[zk].emoji+ZONES[zk].name+'！');
+      }
+    });
+    if(state.level >= 2) toast('🎉 升级了！当前 Lv.'+state.level);
+  }
+  slot.productReady = false;
+  slot.productAt = null;
+  playSound('harvest');
+  toast('收集了'+animal.product+animal.productName+'！');
+  render();
+}
+
+function updateZonesState(){
+  let now = Date.now();
+  ZONE_ORDER.forEach(zoneKey=>{
+    state.zones[zoneKey].forEach(slot=>{
+      if(!slot.animal) return;
+      let animal = ANIMALS[slot.animal];
+      // Hunger decreases over time
+      let timeSinceFed = (now - slot.fedAt)/1000;
+      slot.hunger = Math.max(0, 100 - (timeSinceFed / animal.feedInterval)*100);
+      // Product generation
+      if(!slot.productReady && slot.fedAt>0){
+        let timeSinceLastFeed = (now - slot.fedAt)/1000;
+        if(timeSinceLastFeed >= animal.productInterval){
+          slot.productReady = true;
+          slot.productAt = now;
+        }
+      }
+    });
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════
+function render(){
+  // Stats
+  document.getElementById('coinVal').textContent = state.coins;
+  document.getElementById('lvVal').textContent = state.level;
+  let ev = document.getElementById('energyVal');
+  if(ev) ev.textContent = state.energy;
+
+  // Weather
+  document.getElementById('wIcon').textContent = state.weather.icon;
+  document.getElementById('wName').textContent = state.weather.name;
+  document.getElementById('wEffect').textContent = state.weather.effect;
+
+  // Tool info
+  let toolNames = {seed:'选择种子',water:'浇水壶',harvest:'收获篮'};
+  let toolInfos = {
+    seed:'选择种子，点击空地种植',
+    water:'点击作物浇水加速生长',
+    harvest:'点击成熟作物收获'
+  };
+  document.getElementById('curToolName').textContent = state.currentTool==='seed' ? toolNames.seed+'（'+CROPS[state.selectedSeed].name+'）' : toolNames[state.currentTool];
+  document.getElementById('toolInfo').textContent = toolInfos[state.currentTool];
+
+  // Tool active
+  document.querySelectorAll('.toolbar .tool').forEach(t=>{
+    t.classList.toggle('active', t.dataset.tool===state.currentTool);
+  });
+
+  // My farm
+  renderFarmGrid('farmGrid', state.plots, false);
+
+  // Zones
+  renderAllZones();
+
+  // Friend farm
+  renderFriendList();
+  let fp = state.friendPlots[state.currentFriend];
+  if(fp){
+    renderFarmGrid('friendGrid', fp, true);
+  } else if(FRIENDS.length > 0) {
+    let fg = document.getElementById('friendGrid');
+    if(fg) fg.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-m)">点击好友加载农场...</div>';
+  }
+
+  // Market
+  renderMarket();
+
+  // Recycle
+  renderRecycle();
+
+  // House
+  renderHouse();
+}
+
+function renderFarmGrid(gridId, plots, isFriend){
+  let grid = document.getElementById(gridId);
+  let now = Date.now();
+  let html = '';
+  for(let i=0;i<TOTAL;i++){
+    let plot = plots[i];
+    let isLocked = !isFriend && i >= state.unlocked;
+
+    if(!isFriend) updatePlotGrowth(plot, now);
+
+    let cls = 'plot';
+    let inner = '';
+
+    if(isLocked){
+      cls += ' locked';
+      inner = '<span class="lock-i">🔒</span>';
+    } else if(!plot.crop){
+      cls += ' empty';
+      inner = '<span style="font-size:16px;opacity:.3">+</span>';
+    } else {
+      let crop = CROPS[plot.crop];
+      let stageIdx = getStageIndex(plot.growth);
+      let emoji = crop.stages[stageIdx];
+
+      if(plot.growth>=1){
+        cls += ' ready';
+        inner = '<span class="pe">'+emoji+'</span>';
+        inner += '<span class="pl">收获!</span>';
+      } else {
+        cls += ' growing';
+        inner = '<span class="pe">'+emoji+'</span>';
+        inner += '<div class="pb"><div class="pf" style="width:'+Math.round(plot.growth*100)+'%"></div></div>';
+        inner += '<span class="pl">'+Math.round(plot.growth*100)+'%</span>';
+      }
+    }
+
+    html += '<div class="'+cls+'" data-idx="'+i+'" data-friend="'+(isFriend?'1':'0')+'" onclick="handlePlotClick('+i+','+(isFriend?'1':'0')+')">'+inner+'</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function renderFriendList(){
+  let el = document.getElementById('friendList');
+  if(FRIENDS.length === 0){
+    el.innerHTML = '<div style="padding:12px;text-align:center;color:var(--txt-m);font-size:13px">还没有其他玩家<br>让朋友也打开游戏登录吧！</div>';
+    return;
+  }
+  let html = '';
+  FRIENDS.forEach((f,i)=>{
+    let lvText = f.level ? ' Lv.'+f.level : '';
+    html += '<div class="fr-ch'+(i===state.currentFriend?' active':'')+'" onclick="switchFriend('+i+')">'+
+      f.avatar+' '+f.name+lvText+(f.online?' <span style="color:#4caf50">●</span>':' <span style="color:#999">●</span>')+
+    '</div>';
+  });
+  el.innerHTML = html;
+
+  let f = FRIENDS[state.currentFriend];
+  if(!f) return;
+  document.getElementById('ffAv').textContent = f.avatar;
+  document.getElementById('ffNm').textContent = f.name + (f.level ? ' (Lv.'+f.level+')' : '');
+  document.getElementById('ffSt').textContent = f.online?'在线':'离线';
+  document.getElementById('stealBtn').textContent = '🤫 偷菜（'+(MAX_STEALS-state.stealsToday)+'次）';
+}
+
+async function refreshFriends(){
+  toast('正在刷新好友列表...');
+  await syncFriendsList();
+  if(FRIENDS.length > 0){
+    await switchFriend(state.currentFriend);
+    toast('已刷新，找到 '+FRIENDS.length+' 位好友');
+  } else {
+    toast('暂无其他玩家在线');
+  }
+}
+
+function renderMarket(){
+  let el = document.getElementById('mkGrid');
+  let html = '';
+  for(let key in CROPS){
+    let c = CROPS[key];
+    let canBuy = state.coins >= c.cost;
+    let selected = state.selectedSeed===key && state.currentTool==='seed';
+    html += '<div class="mk-item" style="'+(selected?'border-color:var(--green-l);background:#e8f5e9':'')+'">'+
+      '<div class="mk-em">'+c.emoji+'</div>'+
+      '<div class="mk-nm">'+c.name+'</div>'+
+      '<div class="mk-row">'+
+        '<span>种子<b>'+c.cost+'💰</b></span>'+
+        '<span>生长<b>'+c.growTime+'s</b></span>'+
+        '<span>收获<b>'+c.harvest+'💰</b></span>'+
+      '</div>'+
+      '<button class="mk-buy" '+(canBuy?'':'disabled')+' onclick="buySeed(\''+key+'\')">'+(selected?'✓ 已选择':'选择')+'</button>'+
+    '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderRecycle(){
+  let el = document.getElementById('invGrid');
+  let keys = Object.keys(state.inventory);
+  if(keys.length===0){
+    el.innerHTML = '<div class="empty-inv">仓库空空如也～<br>快去种些作物或养些动物吧！</div>';
+    return;
+  }
+  let html = '';
+  keys.forEach(key=>{
+    let count = state.inventory[key];
+    // Check if it's a crop or animal product
+    if(CROPS[key]){
+      let c = CROPS[key];
+      let price = Math.ceil(c.harvest * RECYCLE_PCT);
+      html += '<div class="inv-item">'+
+        '<div class="inv-em">'+c.emoji+'</div>'+
+        '<div class="inv-nm">'+c.name+'</div>'+
+        '<div class="inv-ct">× '+count+'</div>'+
+        '<button class="inv-sell" onclick="sellItem(\''+key+'\')">回收 '+price+'💰</button>'+
+      '</div>';
+    } else if(key.endsWith('_product')){
+      let animalKey = key.replace('_product','');
+      let a = ANIMALS[animalKey];
+      if(a){
+        let price = Math.ceil(a.productValue * RECYCLE_PCT);
+        html += '<div class="inv-item">'+
+          '<div class="inv-em">'+a.product+'</div>'+
+          '<div class="inv-nm">'+a.productName+'</div>'+
+          '<div class="inv-ct">× '+count+'</div>'+
+          '<button class="inv-sell" onclick="sellAnimalProduct(\''+animalKey+'\')">回收 '+price+'💰</button>'+
+        '</div>';
+      }
+    }
+  });
+  el.innerHTML = html;
+}
+
+function sellAnimalProduct(animalKey){
+  let productKey = animalKey+'_product';
+  if(!state.inventory[productKey] || state.inventory[productKey]<=0){ toast('没有可回收的'+ANIMALS[animalKey].productName); return; }
+  let a = ANIMALS[animalKey];
+  let price = Math.ceil(a.productValue * RECYCLE_PCT);
+  state.inventory[productKey]--;
+  if(state.inventory[productKey]<=0) delete state.inventory[productKey];
+  state.coins += price;
+  playSound('coin');
+  toast('回收了'+a.product+a.productName+'，获得'+price+'💰');
+  render();
+}
+
+function renderZoneGrid(zoneKey){
+  let zone = ZONES[zoneKey];
+  let grid = document.getElementById(zone.gridId);
+  if(!grid) return;
+  let slots = state.zones[zoneKey];
+  let unlocked = isZoneUnlocked(zoneKey);
+  let now = Date.now();
+  let html = '';
+
+  for(let i=0;i<zone.slots;i++){
+    let slot = slots[i];
+    let cls = 'zone-slot '+zone.slotClass;
+    let inner = '';
+
+    if(!unlocked){
+      cls += ' locked';
+      inner = '<span class="lock-i">🔒</span>';
+    } else if(!slot.animal){
+      cls += ' empty';
+      if(zoneKey==='pet') inner = '<span style="font-size:14px;opacity:.4">选择宠物</span>';
+      else inner = '<span style="font-size:16px;opacity:.3">+</span>';
+    } else {
+      let animal = ANIMALS[slot.animal];
+      cls += ' occupied';
+      if(slot.hunger < 30) cls += ' hungry';
+      if(slot.productReady) cls = cls.replace('occupied','') + ' product-ready';
+
+      inner = '<span class="zt-emoji">'+animal.emoji+'</span>';
+
+      if(slot.productReady){
+        inner += '<span class="zt-product">'+animal.product+'</span>';
+        inner += '<span class="zt-info">收集!</span>';
+      } else if(zoneKey==='pet'){
+        // Pet shows happiness
+        let happyPct = Math.round(slot.hunger);
+        inner += '<span class="pet-happiness">❤️ '+happyPct+'%</span>';
+      } else {
+        let hungerPct = Math.round(slot.hunger);
+        inner += '<span class="zt-hunger">🍖'+hungerPct+'%</span>';
+        let timeSinceFed = (now - slot.fedAt)/1000;
+        let progress = Math.min(100, (timeSinceFed / animal.productInterval)*100);
+        inner += '<span class="zt-info">'+animal.productName+' '+Math.round(progress)+'%</span>';
+      }
+    }
+
+    html += '<div class="'+cls+'" data-zone="'+zoneKey+'" data-idx="'+i+'" onclick="handleZoneClick(\''+zoneKey+'\','+i+')">'+inner+'</div>';
+  }
+  grid.innerHTML = html;
+
+  // Update zone badge
+  let badgeId = zoneKey+'Badge';
+  let badge = document.getElementById(badgeId);
+  if(badge){
+    if(unlocked){
+      badge.textContent = '已解锁';
+      badge.classList.remove('locked');
+    } else {
+      badge.textContent = 'Lv.'+zone.unlockLevel+' 解锁';
+      badge.classList.add('locked');
+    }
+  }
+
+  // Update zone wrap locked state
+  let zoneWrap = document.getElementById('zone'+zoneKey.charAt(0).toUpperCase()+zoneKey.slice(1));
+  if(zoneWrap){
+    zoneWrap.classList.toggle('locked-zone', !unlocked);
+  }
+
+  // Render toolbar for this zone
+  if(zone.toolbarId && unlocked){
+    let tb = document.getElementById(zone.toolbarId);
+    if(tb && state.activeZone===zoneKey){
+      let animals = Object.keys(ANIMALS).filter(k=>ANIMALS[k].zone===zoneKey);
+      let html2 = '';
+      html2 += '<div class="ztool'+(state.zoneTool==='buy'?' active':'')+'" onclick="selectZoneTool(\''+zoneKey+'\',\'buy\')">🛒 购买</div>';
+      html2 += '<div class="ztool'+(state.zoneTool==='feed'?' active':'')+'" onclick="selectZoneTool(\''+zoneKey+'\',\'feed\')">🌾 喂食</div>';
+      html2 += '<div class="ztool'+(state.zoneTool==='collect'?' active':'')+'" onclick="selectZoneTool(\''+zoneKey+'\',\'collect\')">🧺 收集</div>';
+      tb.innerHTML = html2;
+    } else if(tb){
+      tb.innerHTML = '';
+    }
+  }
+}
+
+function renderAllZones(){
+  ZONE_ORDER.forEach(zk=>renderZoneGrid(zk));
+}
+
+function renderAnimalPicker(){
+  let el = document.getElementById('animalPk');
+  let opts = document.getElementById('animalOpts');
+  if(!el) return;
+  if(!state.activeZone || state.zoneTool!=='buy'){ el.classList.remove('show'); return; }
+  el.classList.add('show');
+  let zoneAnimals = Object.keys(ANIMALS).filter(k=>ANIMALS[k].zone===state.activeZone);
+  let html = '';
+  zoneAnimals.forEach(key=>{
+    let a = ANIMALS[key];
+    let canAfford = state.coins >= a.cost;
+    html += '<div class="animal-opt'+(state.selectedAnimal===key?' active':'')+'" onclick="pickAnimal(\''+key+'\')" style="'+(canAfford?'':'opacity:.5')+'">'+
+      '<span class="ae">'+a.emoji+'</span>'+
+      '<div class="ai"><div class="an">'+a.name+'</div><div class="ad">产出 '+a.product+a.productName+' · 每'+a.productInterval+'s</div></div>'+
+      '<span class="ac">'+a.cost+'💰</span>'+
+    '</div>';
+  });
+  opts.innerHTML = html;
+}
+
+function handleZoneClick(zoneKey, slotIdx){
+  if(!isZoneUnlocked(zoneKey)){ toast('需要 Lv.'+ZONES[zoneKey].unlockLevel+' 解锁'); playSound('error'); return; }
+
+  // Pet zone: only feed/collect (no buy - pet is chosen at start)
+  if(zoneKey==='pet'){
+    let slot = state.zones.pet[0];
+    if(!slot.animal) return;
+    if(slot.productReady){
+      collectZoneProduct('pet', 0);
+    } else {
+      feedZoneAnimal('pet', 0);
+    }
+    return;
+  }
+
+  // Set active zone for toolbar
+  if(state.activeZone !== zoneKey){
+    state.activeZone = zoneKey;
+    state.zoneTool = 'buy';
+    renderAllZones();
+    renderAnimalPicker();
+    return;
+  }
+
+  switch(state.zoneTool){
+    case 'buy':
+      if(!state.zones[zoneKey][slotIdx].animal) buyZoneAnimal(zoneKey, slotIdx);
+      else { toast('这里已经有动物了'); playSound('error'); }
+      break;
+    case 'feed':
+      feedZoneAnimal(zoneKey, slotIdx);
+      let feedEl = document.querySelector('#'+ZONES[zoneKey].gridId+' .zone-slot[data-idx="'+slotIdx+'"]');
+      if(feedEl){ feedEl.style.transform='scale(1.1)'; setTimeout(()=>feedEl.style.transform='',300); }
+      break;
+    case 'collect':
+      if(state.zones[zoneKey][slotIdx].productReady) collectZoneProduct(zoneKey, slotIdx);
+      else if(state.zones[zoneKey][slotIdx].animal) toast('还没有产出');
+      else toast('这里没有动物');
+      break;
+  }
+}
+
+function selectZoneTool(zoneKey, tool){
+  state.activeZone = zoneKey;
+  state.zoneTool = tool;
+  document.getElementById('animalPk').classList.toggle('show', tool==='buy');
+  renderAllZones();
+  renderAnimalPicker();
+}
+
+function pickAnimal(key){
+  state.selectedAnimal = key;
+  renderAllZones();
+  renderAnimalPicker();
+}
+
+function renderSeedPicker(){
+  let el = document.getElementById('seedPk');
+  let opts = document.getElementById('seedOpts');
+  if(state.currentTool!=='seed'){ el.classList.remove('show'); return; }
+  el.classList.add('show');
+  let html = '';
+  for(let key in CROPS){
+    let c = CROPS[key];
+    let canAfford = state.coins >= c.cost;
+    html += '<div class="seed-opt'+(state.selectedSeed===key?' active':'')+'" onclick="pickSeed(\''+key+'\')" style="'+(canAfford?'':'opacity:.5')+'">'+
+      '<span class="se">'+c.emoji+'</span>'+
+      '<div class="si"><div class="sn">'+c.name+'</div><div class="sd">生长 '+c.growTime+'s · 收获 '+c.harvest+'💰</div></div>'+
+      '<span class="sc">'+c.cost+'💰</span>'+
+    '</div>';
+  }
+  opts.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════
+//  EVENTS
+// ════════════════════════════════════════════════════════
+function handlePlotClick(idx, isFriend){
+  isFriend = !!isFriend;
+  if(isFriend){
+    // In friend farm: only water and harvest(own)
+    let plot = state.friendPlots[state.currentFriend][idx];
+    if(idx >= state.unlocked && !plot.crop) return;
+    if(state.currentTool==='water') waterPlot(idx, true, state.currentFriend);
+    // Can't harvest friend's crops (only steal via button)
+    return;
+  }
+
+  let plot = state.plots[idx];
+  if(idx >= state.unlocked){ return; }
+
+  switch(state.currentTool){
+    case 'seed':
+      if(!plot.crop) plantCrop(idx);
+      else { toast('这块地已经种了'+CROPS[plot.crop].name); playSound('error'); }
+      break;
+    case 'water':
+      waterPlot(idx, false);
+      break;
+    case 'harvest':
+      if(plot.crop && plot.growth>=1) harvestPlot(idx, false);
+      else if(plot.crop) toast('还没成熟，当前 '+Math.round(plot.growth*100)+'%');
+      else toast('空地不需要收获');
+      break;
+  }
+
+  // Visual feedback on the plot element
+  let plotEl = document.querySelector('#farmGrid .plot[data-idx="'+idx+'"]');
+  if(plotEl){
+    if(state.currentTool==='water'){
+      plotEl.classList.add('watering');
+      particles(plotEl,'#64b5f6',6);
+      setTimeout(()=>plotEl.classList.remove('watering'),600);
+    }
+    if(state.currentTool==='harvest' && plot.crop===null){
+      particles(plotEl,'#ffd54f',8);
+      floatText(plotEl, '+'+CROPS[Object.keys(CROPS).find(k=>CROPS[k].emoji===plotEl.querySelector('.pe')?.textContent)+' harvest']||'', '#f5a623');
+    }
+  }
+}
+
+function selectTool(tool){
+  state.currentTool = tool;
+  document.getElementById('seedPk').classList.toggle('show', tool==='seed');
+  render();
+  renderSeedPicker();
+}
+
+function pickSeed(key){
+  state.selectedSeed = key;
+  render();
+  renderSeedPicker();
+}
+
+async function switchFriend(idx){
+  state.currentFriend = idx;
+  let friend = FRIENDS[idx];
+  if(!friend) return;
+
+  // Show loading state
+  let friendGrid = document.getElementById('friendGrid');
+  if(friendGrid) friendGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-m)">正在加载 '+friend.avatar+' '+friend.name+' 的农场...</div>';
+
+  // Try loading real state from server
+  let saved = await loadStateFromServer(friend.name);
+  if(saved && saved.plots){
+    // Convert server plots to display format with growth recalculation
+    let now = Date.now();
+    let elapsed = (now - (saved.savedAt || now)) / 1000; // seconds since save
+    let weatherMult = (saved.weather && saved.weather.mult) ? saved.weather.mult : 1;
+
+    state.friendPlots[idx] = saved.plots.map(plot => {
+      if(!plot.crop) return {crop:null, plantedAt:null, growth:0, watered:false, wateredAt:0, readyAt:null};
+      let crop = CROPS[plot.crop];
+      if(!crop) return {crop:null, plantedAt:null, growth:0, watered:false, wateredAt:0, readyAt:null};
+
+      // Recalculate growth based on elapsed time
+      let g = plot.growth || 0;
+      if(g < 1 && crop.growTime > 0){
+        let waterBonus = plot.watered ? 1.5 : 1;
+        let addedGrowth = (elapsed * waterBonus * weatherMult) / crop.growTime;
+        g = Math.min(1, g + addedGrowth);
+      }
+      return {
+        crop: plot.crop,
+        plantedAt: plot.plantedAt,
+        growth: g,
+        watered: plot.watered || false,
+        wateredAt: plot.wateredAt || 0,
+        readyAt: g >= 1 ? (plot.readyAt || now) : null
+      };
+    });
+
+    // Update friend display with real level/coins
+    friend.level = saved.level || 1;
+    friend.coins = saved.coins || 0;
+  } else {
+    // No saved state — show empty farm
+    state.friendPlots[idx] = Array.from({length:TOTAL},()=>({crop:null,plantedAt:null,growth:0,watered:false,wateredAt:0,readyAt:null}));
+  }
+
+  render();
+}
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    let view = tab.dataset.view;
+    state.currentView = view;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('myfarmView').style.display = view==='myfarm'?'block':'none';
+    document.getElementById('pastureView').style.display = view==='pasture'?'block':'none';
+    document.getElementById('pastureView').classList.toggle('active', view==='pasture');
+    document.getElementById('friendView').style.display = view==='friends'?'block':'none';
+    document.getElementById('friendView').classList.toggle('active', view==='friends');
+    document.getElementById('marketView').style.display = view==='market'?'block':'none';
+    document.getElementById('marketView').classList.toggle('active', view==='market');
+    document.getElementById('recycleView').style.display = view==='recycle'?'block':'none';
+    document.getElementById('recycleView').classList.toggle('active', view==='recycle');
+    // House view
+    document.getElementById('houseView').style.display = view==='house'?'block':'none';
+    // Show/hide farm toolbar vs pasture toolbar
+    document.getElementById('toolbar').style.display = view==='myfarm'?'flex':'none';
+    // Hide pickers when not on their views
+    if(view!=='myfarm') document.getElementById('seedPk').classList.remove('show');
+    if(view!=='pasture'){ document.getElementById('animalPk').classList.remove('show'); state.activeZone=null; }
+    if(view==='pasture'){
+      renderAllZones();
+      if(!state.petChosen) document.getElementById('petSelDlg').classList.remove('hide');
+    }
+    if(view==='house'){
+      renderHouse();
+      announceChatPresence();
+    } else {
+      stopChatPolling();
+    }
+    if(view==='friends'){
+      syncFriendsList().then(()=>{
+        if(FRIENDS.length > 0) switchFriend(state.currentFriend);
+      });
+    }
+    render();
+  });
+});
+
+// Close pickers when clicking outside
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('.seed-pk') && !e.target.closest('.tool[data-tool="seed"]') && !e.target.closest('.mk-buy')){
+    if(state.currentView!=='market') document.getElementById('seedPk').classList.remove('show');
+  }
+  if(!e.target.closest('.animal-pk') && !e.target.closest('.ztool') && !e.target.closest('.zone-slot')){
+    if(state.activeZone && state.zoneTool==='buy'){
+      // Don't close immediately, let zone click handler set activeZone first
+    } else {
+      document.getElementById('animalPk').classList.remove('show');
+    }
+  }
+});
+
+// Welcome dialog
+function closeWelcome(){
+  document.getElementById('welcomeDlg').classList.add('hide');
+  // Show pet selection if pet not yet chosen
+  if(!state.petChosen){
+    setTimeout(()=>document.getElementById('petSelDlg').classList.remove('hide'),300);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  GAME LOOP
+// ════════════════════════════════════════════════════════
+let lastWeatherChange = Date.now();
+let tickCount = 0;
+
+function gameLoop(){
+  let now = Date.now();
+  tickCount++;
+
+  // Update growth for all plots
+  state.plots.forEach(p=>updatePlotGrowth(p, now));
+
+  // Update zone animals (hunger, product generation)
+  updateZonesState();
+
+  // Change weather every 2 minutes
+  if(now - lastWeatherChange > 120000){
+    let newW = WEATHERS[Math.floor(Math.random()*WEATHERS.length)];
+    if(newW.id !== state.weather.id){
+      state.weather = newW;
+      toast('天气变化：'+newW.icon+' '+newW.name+'（'+newW.effect+'）');
+    }
+    lastWeatherChange = now;
+  }
+
+  // Render every 1s
+  if(tickCount % 2 === 0) render();
+}
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+// Set initial view visibility
+document.getElementById('pastureView').style.display = 'none';
+document.getElementById('houseView').style.display = 'none';
+document.getElementById('friendView').style.display = 'none';
+document.getElementById('marketView').style.display = 'none';
+document.getElementById('recycleView').style.display = 'none';
+
+render();
+renderSeedPicker();
+renderAnimalPicker();
+setInterval(gameLoop, 500);
+
+// Keyboard shortcuts
+document.addEventListener('keydown',(e)=>{
+  if(e.key==='1') selectTool('seed');
+  if(e.key==='2') selectTool('water');
+  if(e.key==='3') selectTool('harvest');
+});
+</script>
+</body>
+</html>
