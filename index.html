@@ -1052,6 +1052,8 @@ if(!checkSavedLogin()){
 // ════════════════════════════════════════════════════════
 // API base URL — FC backend
 const API_BASE = 'https://chat-room-afgnquibtv.cn-hangzhou.fcapp.run';
+const API_TOKEN = 'Wha-rFSjYWw0EJdCCKe-GpvyYURGh772';
+const AUTH_HEADERS = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_TOKEN};
 
 let lastMsgTime = 0;
 let chatPollTimer = null;
@@ -1074,7 +1076,7 @@ async function sendChat(){
   try{
     let resp = await fetch(API_BASE + '/api/message', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: AUTH_HEADERS,
       body: JSON.stringify({
         name: state.chatName,
         avatar: state.chatAvatar,
@@ -1096,7 +1098,9 @@ async function sendChat(){
 async function pollMessages(){
   if(!API_BASE || !chatInHouse) return;
   try{
-    let resp = await fetch(API_BASE + '/api/messages?since=' + lastMsgTime);
+    let resp = await fetch(API_BASE + '/api/messages?since=' + lastMsgTime, {
+      headers: {'Authorization': 'Bearer ' + API_TOKEN}
+    });
     if(resp.ok){
       let data = await resp.json();
       if(data.messages && data.messages.length > 0){
@@ -1126,7 +1130,7 @@ async function postPresence(){
   try{
     await fetch(API_BASE + '/api/presence', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: AUTH_HEADERS,
       body: JSON.stringify({
         name: state.chatName,
         avatar: state.chatAvatar
@@ -1139,7 +1143,9 @@ async function postPresence(){
 async function fetchPresence(){
   if(!API_BASE || !chatInHouse) return;
   try{
-    let resp = await fetch(API_BASE + '/api/presence');
+    let resp = await fetch(API_BASE + '/api/presence', {
+      headers: {'Authorization': 'Bearer ' + API_TOKEN}
+    });
     if(resp.ok){
       let data = await resp.json();
       let onlineNames = (data.users || []).map(u => u.name);
@@ -1195,7 +1201,7 @@ function startChatPolling(){
   if(API_BASE){
     fetch(API_BASE + '/api/system', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: AUTH_HEADERS,
       body: JSON.stringify({text: '💬 ' + state.chatName + ' 进入了房子'})
     }).catch(()=>{});
   }
@@ -1251,7 +1257,7 @@ async function saveStateToServer(){
     
     await fetch(API_BASE + '/api/farm/save', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: AUTH_HEADERS,
       body: JSON.stringify({
         name: state.chatName,
         avatar: state.chatAvatar,
@@ -1268,7 +1274,9 @@ async function saveStateToServer(){
 async function loadStateFromServer(name){
   if(!API_BASE) return null;
   try{
-    let resp = await fetch(API_BASE + '/api/farm/load?name=' + encodeURIComponent(name));
+    let resp = await fetch(API_BASE + '/api/farm/load?name=' + encodeURIComponent(name), {
+      headers: {'Authorization': 'Bearer ' + API_TOKEN}
+    });
     if(resp.ok){
       let data = await resp.json();
       if(data.exists && data.state) return data.state;
@@ -1281,7 +1289,9 @@ async function loadStateFromServer(name){
 async function syncFriendsList(){
   if(!API_BASE) return;
   try{
-    let resp = await fetch(API_BASE + '/api/players');
+    let resp = await fetch(API_BASE + '/api/players', {
+      headers: {'Authorization': 'Bearer ' + API_TOKEN}
+    });
     if(resp.ok){
       let data = await resp.json();
       if(data.players && data.players.length > 0){
