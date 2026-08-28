@@ -182,8 +182,9 @@ main{
 }
 .char-sprite{
   position:absolute;pointer-events:auto;cursor:pointer;
-  transition:left 0.4s ease, top 0.4s ease;
+  transition:left 0.4s ease, top 0.4s ease, transform 0.3s ease;
   filter:drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+  transform-origin:center bottom;
 }
 .char-sprite svg{width:48px;height:64px}
 .char-sprite .char-name{
@@ -199,18 +200,40 @@ main{
 /* ── Scene Area (for character movement) ── */
 .scene-area{
   position:relative;width:100%;height:400px;
-  background:linear-gradient(180deg,#a8d5a2 0%,#8bc34a 50%,#689f38 100%);
+  background:linear-gradient(180deg,#87ceeb 0%,#a8d5a2 25%,#8bc34a 50%,#689f38 100%);
   border-radius:12px;overflow:hidden;margin-bottom:16px;
   box-shadow:inset 0 -8px 16px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1);
+  perspective:800px;
 }
 .scene-area.house-scene{
-  background:linear-gradient(180deg,#d7ccc8 0%,#bcaaa4 50%,#a1887f 100%);
+  background:linear-gradient(180deg,#efebe9 0%,#d7ccc8 20%,#bcaaa4 50%,#a1887f 100%);
 }
 .scene-area .ground-pattern{
   position:absolute;inset:0;
   background-image:
-    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(0,0,0,0.05) 0%, transparent 50%);
+    repeating-linear-gradient(90deg, transparent 0px, transparent 48px, rgba(255,255,255,0.08) 48px, rgba(255,255,255,0.08) 50px),
+    repeating-linear-gradient(0deg, transparent 0px, transparent 48px, rgba(255,255,255,0.08) 48px, rgba(255,255,255,0.08) 50px);
+  transform:rotateX(45deg) scale(1.4);
+  transform-origin:center bottom;
+}
+.scene-area .sky-band{
+  position:absolute;top:0;left:0;right:0;height:100px;
+  background:linear-gradient(180deg,#87ceeb 0%,#b3e5fc 60%,transparent 100%);
+  z-index:1;
+}
+.scene-area .sky-band .cloud{
+  position:absolute;background:rgba(255,255,255,0.7);border-radius:50%;
+  animation:cloudDrift 30s linear infinite;
+}
+@keyframes cloudDrift{0%{transform:translateX(-100px)}100%{transform:translateX(calc(100% + 100px))}}
+.scene-area .deco-tree{
+  position:absolute;z-index:5;font-size:36px;filter:drop-shadow(0 4px 3px rgba(0,0,0,0.3));
+  pointer-events:none;
+}
+.scene-area .deco-path{
+  position:absolute;bottom:0;left:0;right:0;height:60px;
+  background:linear-gradient(0deg,rgba(139,109,61,0.4) 0%,transparent 100%);
+  z-index:2;pointer-events:none;
 }
 .scene-area .click-target{
   position:absolute;width:24px;height:24px;border-radius:50%;
@@ -2731,7 +2754,20 @@ function initFarmScene(){
     let scene = document.createElement('div');
     scene.className = 'scene-area';
     scene.id = 'farmScene';
-    scene.innerHTML = '<div class="ground-pattern"></div><div class="char-layer" id="farmCharLayer"></div>';
+    scene.innerHTML = `
+      <div class="sky-band">
+        <div class="cloud" style="width:60px;height:24px;top:20px;left:10%;animation-delay:0s"></div>
+        <div class="cloud" style="width:80px;height:30px;top:35px;left:50%;animation-delay:-12s"></div>
+        <div class="cloud" style="width:50px;height:20px;top:15px;left:75%;animation-delay:-20s"></div>
+      </div>
+      <div class="ground-pattern"></div>
+      <div class="deco-path"></div>
+      <div class="deco-tree" style="left:5%;top:55%">🌳</div>
+      <div class="deco-tree" style="right:6%;top:48%">🌲</div>
+      <div class="deco-tree" style="left:15%;top:35%;font-size:28px">🌻</div>
+      <div class="deco-tree" style="right:18%;top:30%;font-size:24px">🌾</div>
+      <div class="char-layer" id="farmCharLayer"></div>
+    `;
     farmView.insertBefore(scene, farmView.firstChild);
     
     // Click to move
@@ -2765,7 +2801,14 @@ function initHouseScene(){
     let scene = document.createElement('div');
     scene.className = 'scene-area house-scene';
     scene.id = 'houseScene';
-    scene.innerHTML = '<div class="ground-pattern"></div><div class="char-layer" id="houseCharLayer"></div>';
+    scene.innerHTML = `
+      <div class="ground-pattern"></div>
+      <div class="deco-tree" style="left:8%;top:20%;font-size:32px">🪑</div>
+      <div class="deco-tree" style="right:10%;top:15%;font-size:28px">🛋️</div>
+      <div class="deco-tree" style="left:40%;top:10%;font-size:26px">🪴</div>
+      <div class="deco-tree" style="right:30%;top:65%;font-size:30px">🏮</div>
+      <div class="char-layer" id="houseCharLayer"></div>
+    `;
     
     // Insert after room nav
     let roomNav = document.getElementById('roomNav');
@@ -2822,13 +2865,24 @@ function moveToPosition(x, y){
   syncPositionToServer();
 }
 
+function getDepthScale(y, sceneHeight){
+  // Characters at top (far) = 0.7x, at bottom (close) = 1.15x
+  let ratio = Math.max(0, Math.min(1, y / sceneHeight));
+  return 0.7 + ratio * 0.45;
+}
+
 function updateMyCharPosition(){
+  let scene = getActiveScene();
+  let sceneH = scene ? scene.clientHeight : 400;
+  let scale = getDepthScale(myCharPos.y, sceneH);
   // Update in both scenes
   ['myCharFarm', 'myCharHouse'].forEach(id=>{
     let el = document.getElementById(id);
     if(el){
       el.style.left = (myCharPos.x - 24) + 'px';
       el.style.top = (myCharPos.y - 32) + 'px';
+      el.style.transform = 'scale(' + scale.toFixed(2) + ')';
+      el.style.zIndex = Math.round(myCharPos.y);
       el.classList.add('walking');
       setTimeout(()=>el.classList.remove('walking'), 400);
     }
@@ -2885,6 +2939,10 @@ function updateFriendChar(name, avatar, pos, colorIdx){
   let layer = document.getElementById(layerId);
   if(!layer) return;
   
+  let scene = layer.closest('.scene-area');
+  let sceneH = scene ? scene.clientHeight : 400;
+  let scale = getDepthScale(pos.y, sceneH);
+  
   let el = document.getElementById('char-' + name);
   if(!el){
     el = createCharElement(name, colorIdx, false);
@@ -2894,6 +2952,8 @@ function updateFriendChar(name, avatar, pos, colorIdx){
   
   el.style.left = (pos.x - 24) + 'px';
   el.style.top = (pos.y - 32) + 'px';
+  el.style.transform = 'scale(' + scale.toFixed(2) + ')';
+  el.style.zIndex = Math.round(pos.y);
   el.classList.add('walking');
   setTimeout(()=>el.classList.remove('walking'), 400);
   
